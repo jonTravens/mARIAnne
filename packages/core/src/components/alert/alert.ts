@@ -93,8 +93,8 @@ export class MrAlert extends LitElement {
      * Passé à `true` au clic sur le bouton close, déclenche la transition CSS.
      * @ignore
      */
-    @state()
-    hiding: boolean = false;
+    @property({ reflect: true, type: Boolean })
+    protected hiding: boolean = false;
 
     constructor() {
         super();
@@ -105,7 +105,6 @@ export class MrAlert extends LitElement {
     override render(): TemplateResult {
         const containerClassMap: ClassInfo = {
             alert: true,
-            'hiding': this.hiding,
             'alert-dismissible': this.nextFocus !== null,
         };
         containerClassMap[`alert-${this.version}`] = true;
@@ -144,7 +143,7 @@ export class MrAlert extends LitElement {
     }
 
     private _hide = (): void => {
-        if (this.canBeHidden) this.hiding = true;
+        this.hiding = this.canBeHidden;
     };
 
     /** Supprime l'alerte du DOM et reporte le focus après la fin de la transition CSS */

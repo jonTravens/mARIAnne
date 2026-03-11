@@ -20,10 +20,13 @@ variants:
   - name: Dismissible
     description: Rendu d'une alerte qui peut être fermée. L'ID fourni doit être un élément existant dans la page qui recevra le focus à la fermeture du composant
     html: |
-      <mr-alert next-focus="idBoutonFocused">
-        <span slot="title">Alerte de succès</span>
-        <span slot="content">Je suis une alerte de succès.</span>
-      </mr-alert>
+        <div>
+            <button style="margin-bottom: 10px" type="button" id="idBoutonFocused">Test focus</button>
+            <mr-alert next-focus="idBoutonFocused">
+                <span slot="title">Alerte de succès</span>
+                <span slot="content">Je suis une alerte de succès.</span>
+            </mr-alert>
+        </div>
 ---
 
 Documentation narrative du composant `mr-alert`.

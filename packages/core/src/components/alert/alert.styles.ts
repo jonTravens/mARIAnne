@@ -8,7 +8,7 @@ export default css`
         transform: scale(1);
     }
 
-    :host(.hiding) {
+    :host([hiding]) {
         opacity: 0;
         transform: scale(0.75);
         transition: opacity, transform;
