@@ -60,70 +60,68 @@ type ComponentApiProps = Parameters<typeof ComponentApi>[0]['component'];
 const apiComponent = component as ComponentApiProps;
 ---
 
-<Layout title="{pageTitle}">
+<Layout title={pageTitle}>
     <Fragment slot="nav">
-        <ComponentNav currentTag="{component.tagName}" />
+        <ComponentNav currentTag={component.tagName} />
     </Fragment>
 
     <h1>{pageTitle}</h1>
     <code>&lt;{component.tagName}&gt;</code>
-    {pageDesc &&
-    <p class="summary">{pageDesc}</p>
-    } {variants.length > 0 && (
-    <section>
-        <h2>Démo</h2>
-        <Playground variants="{variants}" id="{component.tagName}" />
-    </section>
-    )} {Content && (
-    <section class="narrative">
-        <content />
-    </section>
+    {pageDesc && <p class="summary">{pageDesc}</p>}
+
+    {variants.length > 0 && (
+        <section>
+            <h2>Démo</h2>
+            <Playground variants={variants} id={component.tagName} />
+        </section>
     )}
 
-    <ComponentApi component="{apiComponent}" />
+    {Content && (
+        <section class="narrative">
+            <Content />
+        </section>
+    )}
+
+    <ComponentApi component={apiComponent} />
 </Layout>
 
 <script type="module" src="/cdn/index.js"></script>
 
 <style>
-    h1 {
-        margin-bottom: 0.25rem;
-    }
+    h1 { margin-bottom: 0.25rem; }
 
     h1 code {
-        font-size: 1.75rem;
+        font-size:  1.75rem;
         background: none;
-        padding: 0;
+        padding:    0;
     }
 
     h2 {
-        font-size: 1.1rem;
-        font-weight: 600;
-        border-bottom: 1px solid #e5e7eb;
+        font-size:      1.1rem;
+        font-weight:    600;
+        border-bottom:  1px solid #e5e7eb;
         padding-bottom: 0.5rem;
-        margin: 2rem 0 1rem;
+        margin:         2rem 0 1rem;
     }
 
     .summary {
-        font-size: 1.05rem;
-        color: #4b5563;
+        font-size:     1.05rem;
+        color:         #4b5563;
         margin-bottom: 0.25rem;
     }
 
     .narrative {
-        margin: 1.5rem 0;
-        color: #374151;
+        margin:      1.5rem 0;
+        color:       #374151;
         line-height: 1.7;
     }
 
-    .narrative :global(p) {
-        margin-bottom: 0.75rem;
-    }
+    .narrative :global(p)    { margin-bottom: 0.75rem; }
 
     .narrative :global(code) {
-        font-size: 0.85em;
-        background: #f3f4f6;
-        padding: 0.1em 0.35em;
+        font-size:     0.85em;
+        background:    #f3f4f6;
+        padding:       0.1em 0.35em;
         border-radius: 0.25em;
     }
 </style>

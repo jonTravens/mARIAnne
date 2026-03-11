@@ -75,18 +75,22 @@ const navItems: NavItem[] = allComponents
 
 <ul class="nav-list">
     {navItems.map((item) => (
-    <li class="{item.cssClass}">
-        <a href="{item.href}" aria-current="{item.ariaCurrent}"> {item.label} </a>
-        {item.children.length > 0 && (
-        <ul class="nav-children">
-            {item.children.map((child) => (
-            <li class="nav-item">
-                <a href="{child.href}" aria-current="{child.ariaCurrent}"> {child.label} </a>
-            </li>
-            ))}
-        </ul>
-        )}
-    </li>
+        <li class={item.cssClass}>
+            <a href={item.href} aria-current={item.ariaCurrent}>
+                {item.label}
+            </a>
+            {item.children.length > 0 && (
+                <ul class="nav-children">
+                    {item.children.map((child) => (
+                        <li class="nav-item">
+                            <a href={child.href} aria-current={child.ariaCurrent}>
+                                {child.label}
+                            </a>
+                        </li>
+                    ))}
+                </ul>
+            )}
+        </li>
     ))}
 </ul>
 
@@ -94,15 +98,15 @@ const navItems: NavItem[] = allComponents
     .nav-list,
     .nav-children {
         list-style: none;
-        margin: 0;
-        padding: 0;
+        margin:     0;
+        padding:    0;
     }
 
     .nav-children {
         /* display:      none; */
         padding-left: 1rem;
-        border-left: 2px solid #e5e7eb;
-        margin: 0.25rem 0 0.25rem 0.75rem;
+        border-left:  2px solid #e5e7eb;
+        margin:       0.25rem 0 0.25rem 0.75rem;
     }
 
     /* .nav-children.open {
