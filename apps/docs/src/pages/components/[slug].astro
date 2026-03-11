@@ -2,6 +2,7 @@
 import { getCollection } from 'astro:content';
 import Layout from '../../layouts/Layout.astro';
 import ComponentApi from '../../components/ComponentApi.astro';
+import ComponentNav from '../../components/ComponentNav.astro';
 import Playground from '../../components/Playground.astro';
 import manifest from '@cem';
 import { getSlug } from '../../utils/tag-name.ts';
@@ -23,19 +24,10 @@ interface CemDeclaration {
     members?:       unknown[];
 }
 
-// ─── Données globales ─────────────────────────────────────────────────────────
-
-const components: CemDeclaration[] = manifest.modules
-    .flatMap((m: { declarations?: CemDeclaration[] }) => m.declarations ?? [])
-    .filter((d: CemDeclaration) => d.kind === 'class' && d.customElement === true);
+type MdxEntry = Awaited<ReturnType<typeof getCollection<'components'>>>[number];
 
 // ─── Routes statiques ─────────────────────────────────────────────────────────
 
-/**
- * Une route par composant présent dans le CEM.
- * Si un MDX existe pour ce composant, on fusionne son contenu (variantes + texte narratif).
- * Sinon la page s'affiche quand même avec le tableau d'API auto-généré.
- */
 export async function getStaticPaths() {
     const components: CemDeclaration[] = manifest.modules
         .flatMap((m: { declarations?: CemDeclaration[] }) => m.declarations ?? [])
@@ -54,7 +46,7 @@ export async function getStaticPaths() {
 
 const { component, mdx } = Astro.props as {
     component: CemDeclaration;
-    mdx: Awaited<ReturnType<typeof getCollection<'components'>>>[number] | null;
+    mdx: MdxEntry | null;
 };
 
 const { Content } = mdx ? await mdx.render() : { Content: null };
@@ -62,82 +54,76 @@ const { Content } = mdx ? await mdx.render() : { Content: null };
 const variants  = mdx?.data.variants ?? [];
 const pageTitle = mdx?.data.title ?? component.name;
 const pageDesc  = mdx?.data.description ?? component.summary;
+
+// Cast typé une seule fois pour éviter l'expression complexe dans le template
+type ComponentApiProps = Parameters<typeof ComponentApi>[0]['component'];
+const apiComponent = component as ComponentApiProps;
 ---
 
-<Layout title={pageTitle}>
-
+<Layout title="{pageTitle}">
     <Fragment slot="nav">
-        <ul>
-        {components.map((c) => (
-            <li>
-                <a
-                    href={`/components/${getSlug(c.tagName ?? '')}`}
-                    aria-current={c.tagName === component.tagName ? 'page' : undefined}
-                >
-                    {c.name}
-                </a>
-            </li>
-        ))}
-        </ul>
+        <ComponentNav currentTag="{component.tagName}" />
     </Fragment>
 
-    <h1><code>{component.tagName}</code></h1>
-    {pageDesc && <p class="summary">{pageDesc}</p>}
-
-    {variants.length > 0 && (
-        <section>
-            <h2>Démo</h2>
-            <Playground variants={variants} id={component.tagName} />
-        </section>
+    <h1>{pageTitle}</h1>
+    <code>&lt;{component.tagName}&gt;</code>
+    {pageDesc &&
+    <p class="summary">{pageDesc}</p>
+    } {variants.length > 0 && (
+    <section>
+        <h2>Démo</h2>
+        <Playground variants="{variants}" id="{component.tagName}" />
+    </section>
+    )} {Content && (
+    <section class="narrative">
+        <content />
+    </section>
     )}
 
-    {Content && (
-        <section class="narrative">
-            <Content />
-        </section>
-    )}
-
-    <ComponentApi component={component as Parameters<typeof ComponentApi>[0]['component']} />
-
+    <ComponentApi component="{apiComponent}" />
 </Layout>
 
 <script type="module" src="/cdn/index.js"></script>
 
 <style>
-    h1 { margin-bottom: 0.25rem; }
+    h1 {
+        margin-bottom: 0.25rem;
+    }
 
     h1 code {
-        font-size:  1.75rem;
+        font-size: 1.75rem;
         background: none;
-        padding:    0;
+        padding: 0;
     }
 
     h2 {
-        font-size:      1.1rem;
-        font-weight:    600;
-        border-bottom:  1px solid #e5e7eb;
+        font-size: 1.1rem;
+        font-weight: 600;
+        border-bottom: 1px solid #e5e7eb;
         padding-bottom: 0.5rem;
-        margin:         2rem 0 1rem;
+        margin: 2rem 0 1rem;
     }
 
     .summary {
-        font-size:     1.05rem;
-        color:         #4b5563;
+        font-size: 1.05rem;
+        color: #4b5563;
         margin-bottom: 0.25rem;
     }
 
     .narrative {
-        margin:      1.5rem 0;
-        color:       #374151;
+        margin: 1.5rem 0;
+        color: #374151;
         line-height: 1.7;
     }
 
-    .narrative :global(p)    { margin-bottom: 0.75rem; }
+    .narrative :global(p) {
+        margin-bottom: 0.75rem;
+    }
 
     .narrative :global(code) {
-        font-size:     0.85em;
-        background:    #f3f4f6;
-        padding:       0.1em 0.35em;
+        font-size: 0.85em;
+        background: #f3f4f6;
+        padding: 0.1em 0.35em;
         border-radius: 0.25em;
     }
 </style>

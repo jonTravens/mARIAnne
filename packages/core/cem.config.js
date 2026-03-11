@@ -10,7 +10,7 @@
  */
 export default {
     // Inclure tous les fichiers TS sauf les tests et les styles
-    globs:   ['src/**/*.ts'],
+    globs: ['src/**/*.ts'],
     exclude: ['src/**/*.test.ts', 'src/**/*.styles.ts'],
 
     // Activer la détection automatique des patterns LitElement
@@ -19,5 +19,28 @@ export default {
 
     outdir: 'dist',
 
-    plugins: [],
+    plugins: [
+        {
+            name: 'subcomponent-tag',
+            analyzePhase({ ts, node, moduleDoc }) {
+                // Cherche les classes avec @subcomponent dans leur JSDoc
+                if (!ts.isClassDeclaration(node)) return;
+
+                const jsDocTags = ts.getJSDocTags(node);
+                const tag = jsDocTags.find((t) => t.tagName.text === 'subcomponent');
+                if (!tag) return;
+
+                const parent = tag.comment?.toString().trim();
+                if (!parent) return;
+
+                // Injecte la relation dans la déclaration CEM correspondante
+                const className = node.name?.text;
+                const declaration = moduleDoc.declarations?.find((d) => d.name === className);
+
+                if (declaration) {
+                    declaration.parentComponent = parent;
+                }
+            },
+        },
+    ],
 };

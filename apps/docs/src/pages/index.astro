@@ -1,39 +1,86 @@
 ---
+import { getCollection } from 'astro:content';
 import Layout from '../layouts/Layout.astro';
+import ComponentNav from '../components/ComponentNav.astro';
 import manifest from '@cem';
 import { getSlug } from '../utils/tag-name.ts';
 
-// Extraire tous les composants déclarés dans le manifest
-const components = manifest.modules
-    .flatMap((m: { declarations?: Array<{ kind: string; customElement?: boolean; tagName?: string; name: string; summary?: string }> }) =>
-        m.declarations ?? [],
-    )
-    .filter((d: { kind: string; customElement?: boolean }) => d.kind === 'class' && d.customElement === true);
+interface CemDeclaration {
+    kind:           string;
+    customElement?: boolean;
+    tagName?:       string;
+    name:           string;
+    summary?:       string;
+}
+
+interface ComponentListItem {
+    tagName: string;
+    href:    string;
+    summary: string | undefined;
+}
+
+const allComponents: CemDeclaration[] = manifest.modules
+    .flatMap((m: { declarations?: CemDeclaration[] }) => m.declarations ?? [])
+    .filter((d: CemDeclaration) => d.kind === 'class' && d.customElement === true);
+
+const allMdx   = await getCollection('components');
+const mdxByTag = Object.fromEntries(allMdx.map((e) => [e.data.tagName, e]));
+
+const componentList: ComponentListItem[] = allComponents
+    .filter((c) => !mdxByTag[c.tagName!]?.data.parent)
+    .map((c) => ({
+        tagName: c.tagName!,
+        href:    '/components/' + getSlug(c.tagName!),
+        summary: mdxByTag[c.tagName!]?.data.description ?? c.summary,
+    }));
 ---
 
 <Layout title="Accueil">
     <Fragment slot="nav">
-        <ul>
-            {components.map((c: { tagName?: string; name: string }) => (
-                <li>
-                    <a href={`/components/${getSlug(c.tagName ?? '')}`}>{c.name}</a>
-                </li>
-            ))}
-        </ul>
+        <ComponentNav />
     </Fragment>
 
     <h1>mARIAnne</h1>
     <p>Librairie de web components accessibles.</p>
 
     <h2>Composants disponibles</h2>
-    <ul>
-        {components.map((c: { tagName?: string; name: string; summary?: string }) => (
-            <li>
-                <a href={`/components/${getSlug(c.tagName ?? '')}`}>
-                    <code>{c.tagName}</code>
-                </a>
-                {c.summary && <span> — {c.summary}</span>}
-            </li>
+    <ul class="component-list">
+        {componentList.map((c) => (
+        <li>
+            <a href="{c.href}">
+                <code>{c.tagName}</code>
+            </a>
+            {c.summary &&
+            <p class="summary">{c.summary}</p>
+            }
+        </li>
         ))}
     </ul>
 </Layout>
+
+<style>
+    .component-list {
+        list-style: none;
+        padding: 0;
+        margin: 1rem 0 0;
+        display: grid;
+        gap: 1rem;
+    }
+
+    .component-list a {
+        font-weight: 500;
+    }
+
+    .component-list code {
+        font-size: 0.85em;
+        background: #f3f4f6;
+        padding: 0.1em 0.35em;
+        border-radius: 0.25em;
+    }
+
+    .component-list .summary {
+        margin: 0.25rem 0 0;
+        font-size: 0.875rem;
+        color: #6b7280;
+    }
+</style>

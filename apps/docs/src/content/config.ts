@@ -26,8 +26,12 @@ const components = defineCollection({
         title: z.string(),
         /** Description courte affichée sous le titre */
         description: z.string().optional(),
+        /** Nom du tag du composant parent */
+        parent: z.string().optional(),
         /** Variantes pré-configurées affichées dans le playground */
-        variants: z.array(variantSchema).default([]),
+        // variants: z.array(variantSchema).default([]),
+        // coerce : si le champ est absent ou null dans le MDX, on force un array vide
+        variants: z.preprocess((val) => (Array.isArray(val) ? val : []), z.array(variantSchema)),
     }),
 });
 

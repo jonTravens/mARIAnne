@@ -1,0 +1,111 @@
+---
+import { getCollection } from 'astro:content';
+import { getSlug } from '../utils/tag-name.ts';
+import manifest from '@cem';
+
+interface CemDeclaration {
+    kind:           string;
+    customElement?: boolean;
+    tagName?:       string;
+    name:           string;
+}
+
+interface NavChild {
+    href:        string;
+    label:       string;
+    ariaCurrent: 'page' | undefined;
+}
+
+interface NavItem {
+    href:        string;
+    label:       string;
+    cssClass:    string;
+    ariaCurrent: 'page' | undefined;
+    // childCssClass: string;
+    children:    NavChild[];
+}
+
+interface Props {
+    currentTag?: string;
+}
+
+const { currentTag } = Astro.props;
+
+const allComponents: CemDeclaration[] = manifest.modules
+    .flatMap((m: { declarations?: CemDeclaration[] }) => m.declarations ?? [])
+    .filter((d: CemDeclaration) => d.kind === 'class' && d.customElement === true);
+
+const allMdx   = await getCollection('components');
+const mdxByTag = Object.fromEntries(allMdx.map((e) => [e.data.tagName, e]));
+
+const childrenByParent = allComponents.reduce<Record<string, CemDeclaration[]>>(
+    (acc, c) => {
+        const parent = mdxByTag[c.tagName!]?.data.parent;
+        if (!parent) return acc;
+        (acc[parent] ??= []).push(c);
+        return acc;
+    },
+    {}
+);
+
+const navItems: NavItem[] = allComponents
+    .filter((c) => !mdxByTag[c.tagName!]?.data.parent)
+    .map((c) => {
+        const rawChildren = childrenByParent[c.tagName!] ?? [];
+        const isActive    = c.tagName === currentTag;
+
+        const children: NavChild[] = rawChildren.map((child) => ({
+            href:        '/components/' + getSlug(child.tagName!),
+            label:       mdxByTag[child.tagName!]?.data.title ?? child.name,
+            ariaCurrent: child.tagName === currentTag ? ('page' as const) : undefined,
+        }));
+
+        // const isGroupOpen = isActive || children.some((ch) => ch.ariaCurrent === 'page');
+
+        return {
+            href:          '/components/' + getSlug(c.tagName!),
+            label:         mdxByTag[c.tagName!]?.data.title ?? c.name,
+            cssClass:      'nav-item' + (children.length ? ' has-children' : ''),
+            ariaCurrent:   isActive ? ('page' as const) : undefined,
+            // childCssClass: 'nav-children' + (isGroupOpen ? ' open' : ''),
+            children,
+        };
+    });
+---
+
+<ul class="nav-list">
+    {navItems.map((item) => (
+    <li class="{item.cssClass}">
+        <a href="{item.href}" aria-current="{item.ariaCurrent}"> {item.label} </a>
+        {item.children.length > 0 && (
+        <ul class="nav-children">
+            {item.children.map((child) => (
+            <li class="nav-item">
+                <a href="{child.href}" aria-current="{child.ariaCurrent}"> {child.label} </a>
+            </li>
+            ))}
+        </ul>
+        )}
+    </li>
+    ))}
+</ul>
+
+<style>
+    .nav-list,
+    .nav-children {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+    }
+
+    .nav-children {
+        /* display:      none; */
+        padding-left: 1rem;
+        border-left: 2px solid #e5e7eb;
+        margin: 0.25rem 0 0.25rem 0.75rem;
+    }
+
+    /* .nav-children.open {
+        display: block;
+    } */
+</style>
