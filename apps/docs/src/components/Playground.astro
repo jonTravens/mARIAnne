@@ -1,0 +1,279 @@
+---
+/**
+ * Playground.astro
+ *
+ * Affiche les variantes d'un composant avec :
+ * - Navigation par onglets (une variante = un onglet)
+ * - Preview live du HTML de la variante
+ * - Affichage du code source correspondant
+ * - Copie du code en un clic
+ *
+ * Toute l'interactivité est en JS vanilla dans le <script> — pas de framework,
+ * pas d'hydratation Astro nécessaire. Le composant fonctionne même sans JS
+ * (première variante affichée statiquement).
+ */
+interface Variant {
+    name:         string;
+    description?: string;
+    html:         string;
+}
+
+interface Props {
+    variants: Variant[];
+    /** ID unique pour permettre plusieurs playgrounds sur une même page */
+    id?: string;
+}
+
+const { variants, id = crypto.randomUUID().slice(0, 8) } = Astro.props;
+
+if (variants.length === 0) return;
+
+const firstVariant = variants[0];
+---
+
+<div class="playground" data-playground-id={id}>
+
+    {/* ── Onglets de navigation ── */}
+    <div class="playground-tabs" role="tablist" aria-label="Variantes">
+        {variants.map((variant, index) => (
+            <button
+                role="tab"
+                class={`playground-tab ${index === 0 ? 'active' : ''}`}
+                aria-selected={index === 0 ? 'true' : 'false'}
+                aria-controls={`panel-${id}-${index}`}
+                id={`tab-${id}-${index}`}
+                data-index={index}
+                data-html={variant.html}
+            >
+                {variant.name}
+            </button>
+        ))}
+    </div>
+
+    {/* ── Preview ── */}
+    <div class="playground-preview" id={`panel-${id}-0`} role="tabpanel" aria-labelledby={`tab-${id}-0`}>
+        {firstVariant?.description && (
+            <p class="playground-description">{firstVariant.description}</p>
+        )}
+        <div class="playground-render" data-render>
+            <Fragment set:html={firstVariant?.html ?? ''} />
+        </div>
+    </div>
+
+    {/* ── Code source ── */}
+    <div class="playground-code-wrapper">
+        <button class="playground-copy-btn" data-copy aria-label="Copier le code">
+            Copier
+        </button>
+        <pre class="playground-code"><code data-code>{firstVariant?.html.trim()}</code></pre>
+    </div>
+
+</div>
+
+<script>
+    /**
+     * Initialise tous les playgrounds de la page.
+     * Chaque playground est autonome — pas d'état global.
+     */
+    document.querySelectorAll<HTMLElement>('.playground').forEach((playground) => {
+        const tabs    = playground.querySelectorAll<HTMLButtonElement>('[role="tab"]');
+        const render  = playground.querySelector<HTMLElement>('[data-render]');
+        const code    = playground.querySelector<HTMLElement>('[data-code]');
+        const copyBtn = playground.querySelector<HTMLButtonElement>('[data-copy]');
+        const preview = playground.querySelector<HTMLElement>('[role="tabpanel"]');
+
+        if (!render || !code || !copyBtn || !preview) return;
+
+        // ── Navigation entre variantes ──────────────────────────────────────
+
+        tabs.forEach((tab) => {
+            tab.addEventListener('click', () => {
+                const html        = tab.dataset.html ?? '';
+                const description = tab.dataset.description ?? '';
+
+                // Mise à jour des onglets
+                tabs.forEach((t) => {
+                    t.classList.remove('active');
+                    t.setAttribute('aria-selected', 'false');
+                });
+                tab.classList.add('active');
+                tab.setAttribute('aria-selected', 'true');
+
+                // Mise à jour de la description
+                const descEl = preview.querySelector('.playground-description');
+                if (description) {
+                    if (descEl) {
+                        descEl.textContent = description;
+                    } else {
+                        const p = document.createElement('p');
+                        p.className = 'playground-description';
+                        p.textContent = description;
+                        preview.insertBefore(p, render);
+                    }
+                } else {
+                    descEl?.remove();
+                }
+
+                // Injection du HTML dans le preview
+                // innerHTML re-parse le HTML → les custom elements sont upgradés
+                render.innerHTML = html;
+
+                // Mise à jour du code affiché
+                code.textContent = html.trim();
+            });
+        });
+
+        // ── Copie du code ───────────────────────────────────────────────────
+
+        copyBtn.addEventListener('click', async () => {
+            const text = code.textContent ?? '';
+            try {
+                await navigator.clipboard.writeText(text);
+                copyBtn.textContent = '✓ Copié !';
+                copyBtn.classList.add('copied');
+                setTimeout(() => {
+                    copyBtn.textContent = 'Copier';
+                    copyBtn.classList.remove('copied');
+                }, 2000);
+            } catch {
+                // Fallback pour les contextes sans clipboard API (http, vieux browsers)
+                const range = document.createRange();
+                range.selectNodeContents(code);
+                window.getSelection()?.removeAllRanges();
+                window.getSelection()?.addRange(range);
+            }
+        });
+
+        // ── Navigation clavier dans les onglets (ARIA pattern) ──────────────
+
+        playground.querySelector('[role="tablist"]')?.addEventListener('keydown', (e) => {
+            const event    = e as KeyboardEvent;
+            const tabList  = Array.from(tabs);
+            const current  = tabList.findIndex((t) => t === document.activeElement);
+            if (current === -1) return;
+
+            let next = -1;
+            if (event.key === 'ArrowRight') next = (current + 1) % tabList.length;
+            if (event.key === 'ArrowLeft')  next = (current - 1 + tabList.length) % tabList.length;
+            if (event.key === 'Home')       next = 0;
+            if (event.key === 'End')        next = tabList.length - 1;
+
+            if (next !== -1) {
+                event.preventDefault();
+                tabList[next].focus();
+                tabList[next].click();
+            }
+        });
+    });
+</script>
+
+<style>
+    .playground {
+        border:        1px solid #e5e7eb;
+        border-radius: 0.5rem;
+        overflow:      hidden;
+        margin:        1.5rem 0;
+        font-size:     0.875rem;
+    }
+
+    /* ── Onglets ─────────────────────────────────────────────── */
+
+    .playground-tabs {
+        display:          flex;
+        gap:              0;
+        background:       #f9fafb;
+        border-bottom:    1px solid #e5e7eb;
+        overflow-x:       auto;
+        scrollbar-width:  none;
+    }
+
+    .playground-tabs::-webkit-scrollbar {
+        display: none;
+    }
+
+    .playground-tab {
+        padding:          0.5rem 1rem;
+        border:           none;
+        border-bottom:    2px solid transparent;
+        background:       transparent;
+        color:            #6b7280;
+        font-size:        0.8rem;
+        font-weight:      500;
+        cursor:           pointer;
+        white-space:      nowrap;
+        transition:       color 0.15s, border-color 0.15s;
+    }
+
+    .playground-tab:hover {
+        color: #111827;
+    }
+
+    .playground-tab.active,
+    .playground-tab[aria-selected="true"] {
+        color:        #2563eb;
+        border-color: #2563eb;
+    }
+
+    /* ── Preview ─────────────────────────────────────────────── */
+
+    .playground-preview {
+        padding: 2rem;
+        background: #fff;
+    }
+
+    .playground-description {
+        font-size:   0.8rem;
+        color:       #6b7280;
+        margin:      0 0 1.25rem;
+        font-style:  italic;
+    }
+
+    .playground-render {
+        display:     flex;
+        flex-wrap:   wrap;
+        gap:         0.75rem;
+        align-items: center;
+    }
+
+    /* ── Code source ─────────────────────────────────────────── */
+
+    .playground-code-wrapper {
+        position:      relative;
+        border-top:    1px solid #e5e7eb;
+        background:    #1e1e2e;
+    }
+
+    .playground-copy-btn {
+        position:      absolute;
+        top:           0.5rem;
+        right:         0.5rem;
+        padding:       0.25rem 0.6rem;
+        background:    #374151;
+        color:         #d1d5db;
+        border:        none;
+        border-radius: 0.25rem;
+        font-size:     0.75rem;
+        cursor:        pointer;
+        transition:    background 0.15s;
+        z-index:       1;
+    }
+
+    .playground-copy-btn:hover  { background: #4b5563; }
+    .playground-copy-btn.copied { background: #059669; color: #fff; }
+
+    .playground-code {
+        margin:     0;
+        padding:    1rem 1rem 1rem 1.25rem;
+        overflow-x: auto;
+        font-family: 'Fira Code', 'Cascadia Code', monospace;
+        font-size:  0.8rem;
+        line-height: 1.6;
+        color:      #cdd6f4;
+    }
+
+    .playground-code code {
+        background: transparent;
+        padding:    0;
+        font-size:  inherit;
+    }
+</style>

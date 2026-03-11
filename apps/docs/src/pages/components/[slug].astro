@@ -1,6 +1,8 @@
 ---
+import { getCollection } from 'astro:content';
 import Layout from '../../layouts/Layout.astro';
 import ComponentApi from '../../components/ComponentApi.astro';
+import Playground from '../../components/Playground.astro';
 import manifest from '@cem';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -20,35 +22,49 @@ interface CemDeclaration {
     members?:       unknown[];
 }
 
-// ─── Génération statique des routes ──────────────────────────────────────────
+// ─── Données globales ─────────────────────────────────────────────────────────
+
+const allComponents: CemDeclaration[] = manifest.modules
+    .flatMap((m: { declarations?: CemDeclaration[] }) => m.declarations ?? [])
+    .filter((d: CemDeclaration) => d.kind === 'class' && d.customElement === true);
+
+// ─── Routes statiques ─────────────────────────────────────────────────────────
 
 /**
- * getStaticPaths est appelé au build time par Astro.
- * Pour chaque composant dans le CEM → une page /components/<slug>.
- * Aucun fichier à créer manuellement : ajouter un @customElement → page créée automatiquement.
+ * Une route par composant présent dans le CEM.
+ * Si un MDX existe pour ce composant, on fusionne son contenu (variantes + texte narratif).
+ * Sinon la page s'affiche quand même avec le tableau d'API auto-généré.
  */
-export function getStaticPaths() {
+export async function getStaticPaths() {
     const components: CemDeclaration[] = manifest.modules
         .flatMap((m: { declarations?: CemDeclaration[] }) => m.declarations ?? [])
         .filter((d: CemDeclaration) => d.kind === 'class' && d.customElement === true);
 
+    const mdxEntries = await getCollection('components');
+    const mdxByTag   = Object.fromEntries(mdxEntries.map((e) => [e.data.tagName, e]));
+
     return components.map((component) => ({
-        // mr-button → slug = 'button'
         params: { slug: component.tagName!.replace(/^mr-/, '') },
-        props:  { component },
+        props:  { component, mdx: mdxByTag[component.tagName!] ?? null },
     }));
 }
 
-const { component } = Astro.props as { component: CemDeclaration };
+// ─── Props de la page ─────────────────────────────────────────────────────────
 
-// Tous les composants pour le menu de navigation
-const allComponents: CemDeclaration[] = manifest.modules
-    .flatMap((m: { declarations?: CemDeclaration[] }) => m.declarations ?? [])
-    .filter((d: CemDeclaration) => d.kind === 'class' && d.customElement === true);
+const { component, mdx } = Astro.props as {
+    component: CemDeclaration;
+    mdx: Awaited<ReturnType<typeof getCollection<'components'>>>[number] | null;
+};
+
+const { Content } = mdx ? await mdx.render() : { Content: null };
+
+const variants  = mdx?.data.variants ?? [];
+const pageTitle = mdx?.data.title ?? component.name;
+const pageDesc  = mdx?.data.description ?? component.summary;
 ---
 
-<Layout title={component.name}>
-    <!-- Navigation latérale -->
+<Layout title={pageTitle}>
+
     <Fragment slot="nav">
         {allComponents.map((c) => (
             <a
@@ -60,76 +76,63 @@ const allComponents: CemDeclaration[] = manifest.modules
         ))}
     </Fragment>
 
-    <!-- En-tête du composant -->
-    <h1>
-        <code>{component.tagName}</code>
-    </h1>
+    <h1><code>{component.tagName}</code></h1>
+    {pageDesc && <p class="summary">{pageDesc}</p>}
 
-    {component.summary && <p class="summary">{component.summary}</p>}
-    {component.description && <p>{component.description}</p>}
+    {variants.length > 0 && (
+        <section>
+            <h2>Démo</h2>
+            <Playground variants={variants} id={component.tagName} />
+        </section>
+    )}
 
-    <!-- Démo live interactive -->
-    <!-- Le bundle CDN est chargé pour le playground -->
-    <section class="demo-section">
-        <h2>Démo</h2>
-        <div class="demo-preview" id="demo-preview">
-            <!-- Remplacer par le playground spécifique au composant via MDX/slots -->
-            <slot />
+    {Content && (
+        <section class="narrative">
+            <Content />
+        </section>
+    )}
 
-            <!-- Démo par défaut basée sur le tag name -->
-            {component.tagName === 'mr-button' && (
-                <div style="display:flex; gap: 1rem; flex-wrap: wrap; align-items: center;">
-                    <mr-button>Filled</mr-button>
-                    <mr-button variant="outlined">Outlined</mr-button>
-                    <mr-button variant="ghost">Ghost</mr-button>
-                    <mr-button variant="danger">Danger</mr-button>
-                    <mr-button disabled>Disabled</mr-button>
-                </div>
-            )}
-        </div>
-    </section>
-
-    <!-- Tableau API auto-généré depuis le CEM -->
     <ComponentApi component={component as Parameters<typeof ComponentApi>[0]['component']} />
+
 </Layout>
 
-<!-- Charger le bundle CDN pour le playground -->
-<script
-    type="module"
-    src="/cdn/index.js"
-></script>
+<script type="module" src="/cdn/index.js"></script>
 
 <style>
-    h1 {
-        margin-bottom: 0.5rem;
-    }
+    h1 { margin-bottom: 0.25rem; }
 
     h1 code {
-        font-size: 1.75rem;
+        font-size:  1.75rem;
         background: none;
-        padding: 0;
-        color: inherit;
+        padding:    0;
+    }
+
+    h2 {
+        font-size:      1.1rem;
+        font-weight:    600;
+        border-bottom:  1px solid #e5e7eb;
+        padding-bottom: 0.5rem;
+        margin:         2rem 0 1rem;
     }
 
     .summary {
-        font-size: 1.1rem;
-        color: #4b5563;
-        margin-bottom: 2rem;
+        font-size:     1.05rem;
+        color:         #4b5563;
+        margin-bottom: 0.25rem;
     }
 
-    .demo-section h2 {
-        font-size: 1.1rem;
-        font-weight: 600;
-        border-bottom: 1px solid #e5e7eb;
-        padding-bottom: 0.5rem;
-        margin-bottom: 1rem;
+    .narrative {
+        margin:      1.5rem 0;
+        color:       #374151;
+        line-height: 1.7;
     }
 
-    .demo-preview {
-        padding: 2rem;
-        border: 1px solid #e5e7eb;
-        border-radius: 0.5rem;
-        background: #fff;
-        margin-bottom: 2rem;
+    .narrative :global(p)    { margin-bottom: 0.75rem; }
+
+    .narrative :global(code) {
+        font-size:     0.85em;
+        background:    #f3f4f6;
+        padding:       0.1em 0.35em;
+        border-radius: 0.25em;
     }
 </style>

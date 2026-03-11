@@ -43,5 +43,8 @@
         "happy-dom": "^15.11.7",
         "vitest": "^3.0.4"
     },
-    "customElements": "dist/custom-elements.json"
+    "customElements": "dist/custom-elements.json",
+    "config": {
+        "componentPrefix": "mr"
+    }
 }
