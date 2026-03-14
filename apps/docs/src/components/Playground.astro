@@ -2,248 +2,238 @@
 /**
  * Playground.astro
  *
- * Affiche les variantes d'un composant avec :
- * - Navigation par onglets (une variante = un onglet)
- * - Preview live du HTML de la variante
- * - Affichage du code source correspondant
- * - Copie du code en un clic
+ * Affiche les variantes d'un composant empilées verticalement (style Webawesome),
+ * un playground interactif avec contrôles générés depuis le CEM,
+ * et la référence API complète via ComponentApi.
  *
- * Toute l'interactivité est en JS vanilla dans le <script> — pas de framework,
- * pas d'hydratation Astro nécessaire. Le composant fonctionne même sans JS
- * (première variante affichée statiquement).
+ * Tout le rendu des composants est server-side (Fragment set:html).
+ * Le JS client gère uniquement la copie du code et les contrôles du playground.
  */
+
+import ComponentApi from './ComponentApi.astro';
+
 interface Variant {
     name:         string;
+    label?:       string;
     description?: string;
     html:         string;
 }
 
-interface Props {
-    variants: Variant[];
-    /** ID unique pour permettre plusieurs playgrounds sur une même page */
-    id?: string;
+interface CemControl {
+    attribute:    string;
+    description?: string;
+    controlType:  'select' | 'checkbox' | 'text' | 'number';
+    options:      string[];
+    default?:     string;
+    addDefault?:  boolean;
 }
 
-const { variants, id = crypto.randomUUID().slice(0, 8) } = Astro.props;
+interface CemDeclaration {
+    kind:           string;
+    customElement?: boolean;
+    tagName?:       string;
+    name:           string;
+    summary?:       string;
+    description?:   string;
+    members?:       unknown[];
+    attributes?:    unknown[];
+    events?:        unknown[];
+    cssParts?:      unknown[];
+    cssProperties?: unknown[];
+    slots?:         unknown[];
+}
 
-if (variants.length === 0) return;
+interface Props {
+    variants:            Variant[];
+    tagName:             string;
+    displayMode:         'demo' | 'docs';
+    parentTag?:          string;
+    playgroundHtml:      string;
+    controls:            CemControl[];
+    component:           CemDeclaration;
+}
 
-const firstVariant = variants[0];
+const {
+    variants,
+    tagName,
+    displayMode = 'demo',
+    parentTag,
+    playgroundHtml,
+    controls,
+    component,
+} = Astro.props;
+
+const showPlayground = displayMode === 'demo';
 ---
 
-<div class="playground" data-playground-id={id}>
-
-    {/* ── Onglets de navigation ── */}
-    <div class="playground-tabs" role="tablist" aria-label="Variantes">
-        {variants.map((variant, index) => (
-            <button
-                role="tab"
-                class={`playground-tab ${index === 0 ? 'active' : ''}`}
-                aria-selected={index === 0 ? 'true' : 'false'}
-                aria-controls={`panel-${id}-${index}`}
-                id={`tab-${id}-${index}`}
-                data-index={index}
-                data-html={variant.html}
-            >
-                {variant.name}
-            </button>
+{/* ── Exemples (variantes) ── */}
+{variants.length > 0 && (
+    <section class="examples-section" id="exemples">
+        <h2>Exemples</h2>
+        {variants.map((variant) => (
+            <section class="variant" id={`exemple-${variant.name}`}>
+                <h3>{variant.label ?? variant.name}</h3>
+                {variant.description && (
+                    <p class="variant-description">{variant.description}</p>
+                )}
+                <div class="preview">
+                    <Fragment set:html={variant.html} />
+                </div>
+                <div class="code-block">
+                    <button class="copy-btn" data-copy aria-label="Copier le code">
+                        Copier
+                    </button>
+                    <pre><code>{variant.html.trim()}</code></pre>
+                </div>
+            </section>
         ))}
-    </div>
+    </section>
+)}
 
-    {/* ── Preview ── */}
-    <div class="playground-preview" id={`panel-${id}-0`} role="tabpanel" aria-labelledby={`tab-${id}-0`}>
-        {firstVariant?.description && (
-            <p class="playground-description">{firstVariant.description}</p>
-        )}
-        <div class="playground-render" data-render>
-            <Fragment set:html={firstVariant?.html ?? ''} />
+{/* ── Encart parent pour les sous-composants ── */}
+{parentTag && (
+    <div class="parent-notice">
+        <span class="parent-notice-icon">&#8593;</span>
+        Ce composant est un sous-composant de
+        <a href={`/components/${parentTag.replace(/^mr-/, '')}`}>
+            <code>&lt;{parentTag}&gt;</code>
+        </a>
+    </div>
+)}
+
+{/* ── Playground interactif ── */}
+{showPlayground && (
+    <section class="playground-section" id="playground" data-playground data-tag-name={tagName}>
+        <h2>Playground</h2>
+        <div class="preview" data-playground-preview>
+            <Fragment set:html={playgroundHtml} />
         </div>
-    </div>
+        <div class="playground-code-block">
+            <button class="copy-btn" data-copy-playground aria-label="Copier le code">Copier</button>
+            <pre><code data-playground-code>{playgroundHtml.trim()}</code></pre>
+        </div>
 
-    {/* ── Code source ── */}
-    <div class="playground-code-wrapper">
-        <button class="playground-copy-btn" data-copy aria-label="Copier le code">
-            Copier
-        </button>
-        <pre class="playground-code"><code data-code>{firstVariant?.html.trim()}</code></pre>
-    </div>
+        {controls.length > 0 && (
+            <div class="controls-panel">
+                {controls.map((ctrl) => (
+                    <label class="control-row">
+                        <span class="control-label">{ctrl.attribute}</span>
+                        {ctrl.controlType === 'select' && (
+                            <select
+                                data-attr={ctrl.attribute}
+                                data-playground-ctrl
+                                data-default={ctrl.default ?? ''}
+                            >
+                                {ctrl.addDefault && (
+                                    <option value="">Par défaut</option>
+                                )}
+                                {ctrl.options.map((opt) => (
+                                    <option value={opt}>{opt}</option>
+                                ))}
+                            </select>
+                        )}
+                        {ctrl.controlType === 'checkbox' && (
+                            <input
+                                type="checkbox"
+                                data-attr={ctrl.attribute}
+                                data-playground-ctrl
+                            />
+                        )}
+                        {ctrl.controlType === 'text' && (
+                            <input
+                                type="text"
+                                data-attr={ctrl.attribute}
+                                data-playground-ctrl
+                                data-default={ctrl.default ?? ''}
+                                placeholder={ctrl.default ?? ''}
+                            />
+                        )}
+                        {ctrl.controlType === 'number' && (
+                            <input
+                                type="number"
+                                data-attr={ctrl.attribute}
+                                data-playground-ctrl
+                                data-default={ctrl.default ?? ''}
+                                placeholder={ctrl.default ?? ''}
+                            />
+                        )}
+                    </label>
+                ))}
+            </div>
+        )}
+    </section>
+)}
 
-</div>
+{/* ── Référence API ── */}
+<section id="reference-api">
+    <h2>Référence API</h2>
+    <ComponentApi component={component} />
+</section>
 
-<script>
-    /**
-     * Initialise tous les playgrounds de la page.
-     * Chaque playground est autonome — pas d'état global.
-     */
-    document.querySelectorAll<HTMLElement>('.playground').forEach((playground) => {
-        const tabs    = playground.querySelectorAll<HTMLButtonElement>('[role="tab"]');
-        const render  = playground.querySelector<HTMLElement>('[data-render]');
-        const code    = playground.querySelector<HTMLElement>('[data-code]');
-        const copyBtn = playground.querySelector<HTMLButtonElement>('[data-copy]');
-        const preview = playground.querySelector<HTMLElement>('[role="tabpanel"]');
-
-        if (!render || !code || !copyBtn || !preview) return;
-
-        // ── Navigation entre variantes ──────────────────────────────────────
-
-        tabs.forEach((tab) => {
-            tab.addEventListener('click', () => {
-                const html        = tab.dataset.html ?? '';
-                const description = tab.dataset.description ?? '';
-
-                // Mise à jour des onglets
-                tabs.forEach((t) => {
-                    t.classList.remove('active');
-                    t.setAttribute('aria-selected', 'false');
-                });
-                tab.classList.add('active');
-                tab.setAttribute('aria-selected', 'true');
-
-                // Mise à jour de la description
-                const descEl = preview.querySelector('.playground-description');
-                if (description) {
-                    if (descEl) {
-                        descEl.textContent = description;
-                    } else {
-                        const p = document.createElement('p');
-                        p.className = 'playground-description';
-                        p.textContent = description;
-                        preview.insertBefore(p, render);
-                    }
-                } else {
-                    descEl?.remove();
-                }
-
-                // Injection du HTML dans le preview
-                // innerHTML re-parse le HTML → les custom elements sont upgradés
-                render.innerHTML = html;
-
-                // Mise à jour du code affiché
-                code.textContent = html.trim();
-            });
-        });
-
-        // ── Copie du code ───────────────────────────────────────────────────
-
-        copyBtn.addEventListener('click', async () => {
-            const text = code.textContent ?? '';
-            try {
-                await navigator.clipboard.writeText(text);
-                copyBtn.textContent = '✓ Copié !';
-                copyBtn.classList.add('copied');
-                setTimeout(() => {
-                    copyBtn.textContent = 'Copier';
-                    copyBtn.classList.remove('copied');
-                }, 2000);
-            } catch {
-                // Fallback pour les contextes sans clipboard API (http, vieux browsers)
-                const range = document.createRange();
-                range.selectNodeContents(code);
-                window.getSelection()?.removeAllRanges();
-                window.getSelection()?.addRange(range);
-            }
-        });
-
-        // ── Navigation clavier dans les onglets (ARIA pattern) ──────────────
-
-        playground.querySelector('[role="tablist"]')?.addEventListener('keydown', (e) => {
-            const event    = e as KeyboardEvent;
-            const tabList  = Array.from(tabs);
-            const current  = tabList.findIndex((t) => t === document.activeElement);
-            if (current === -1) return;
-
-            let next = -1;
-            if (event.key === 'ArrowRight') next = (current + 1) % tabList.length;
-            if (event.key === 'ArrowLeft')  next = (current - 1 + tabList.length) % tabList.length;
-            if (event.key === 'Home')       next = 0;
-            if (event.key === 'End')        next = tabList.length - 1;
-
-            if (next !== -1) {
-                event.preventDefault();
-                tabList[next].focus();
-                tabList[next].click();
-            }
-        });
-    });
-</script>
+<script src="/js/playground.js" is:inline></script>
 
 <style>
-    .playground {
-        border:        1px solid #e5e7eb;
-        border-radius: 0.5rem;
-        overflow:      hidden;
-        margin:        1.5rem 0;
+    /* ── Sections communes ─────────────────────────────── */
+
+    .examples-section,
+    .playground-section,
+    #reference-api {
+        margin: 2.5rem 0;
+    }
+
+    h2 {
+        font-size:      1.25rem;
+        font-weight:    700;
+        border-bottom:  2px solid #e5e7eb;
+        padding-bottom: 0.5rem;
+        margin-bottom:  1.5rem;
+        color:          #111827;
+    }
+
+    /* ── Variantes ─────────────────────────────────────── */
+
+    .variant {
+        margin-bottom: 2.5rem;
+    }
+
+    h3 {
+        font-size:     1rem;
+        font-weight:   600;
+        color:         #374151;
+        margin-bottom: 0.5rem;
+    }
+
+    .variant-description {
         font-size:     0.875rem;
+        color:         #6b7280;
+        font-style:    italic;
+        margin-bottom: 0.75rem;
     }
 
-    /* ── Onglets ─────────────────────────────────────────────── */
+    /* ── Preview ─────────────────────────────────────── */
 
-    .playground-tabs {
-        display:          flex;
-        gap:              0;
-        background:       #f9fafb;
-        border-bottom:    1px solid #e5e7eb;
-        overflow-x:       auto;
-        scrollbar-width:  none;
+    .preview {
+        display:       flex;
+        flex-wrap:     wrap;
+        gap:           0.75rem;
+        align-items:   center;
+        padding:       2rem;
+        background:    #fff;
+        border:        1px solid #e5e7eb;
+        border-radius: 0.5rem 0.5rem 0 0;
     }
 
-    .playground-tabs::-webkit-scrollbar {
-        display: none;
-    }
+    /* ── Code block ─────────────────────────────────── */
 
-    .playground-tab {
-        padding:          0.5rem 1rem;
-        border:           none;
-        border-bottom:    2px solid transparent;
-        background:       transparent;
-        color:            #6b7280;
-        font-size:        0.8rem;
-        font-weight:      500;
-        cursor:           pointer;
-        white-space:      nowrap;
-        transition:       color 0.15s, border-color 0.15s;
-    }
-
-    .playground-tab:hover {
-        color: #111827;
-    }
-
-    .playground-tab.active,
-    .playground-tab[aria-selected="true"] {
-        color:        #2563eb;
-        border-color: #2563eb;
-    }
-
-    /* ── Preview ─────────────────────────────────────────────── */
-
-    .playground-preview {
-        padding: 2rem;
-        background: #fff;
-    }
-
-    .playground-description {
-        font-size:   0.8rem;
-        color:       #6b7280;
-        margin:      0 0 1.25rem;
-        font-style:  italic;
-    }
-
-    .playground-render {
-        display:     flex;
-        flex-wrap:   wrap;
-        gap:         0.75rem;
-        align-items: center;
-    }
-
-    /* ── Code source ─────────────────────────────────────────── */
-
-    .playground-code-wrapper {
+    .code-block {
         position:      relative;
-        border-top:    1px solid #e5e7eb;
         background:    #1e1e2e;
+        border:        1px solid #e5e7eb;
+        border-top:    none;
+        border-radius: 0 0 0.5rem 0.5rem;
     }
 
-    .playground-copy-btn {
+    .copy-btn {
         position:      absolute;
         top:           0.5rem;
         right:         0.5rem;
@@ -258,22 +248,113 @@ const firstVariant = variants[0];
         z-index:       1;
     }
 
-    .playground-copy-btn:hover  { background: #4b5563; }
-    .playground-copy-btn.copied { background: #059669; color: #fff; }
+    .copy-btn:hover  { background: #4b5563; }
+    .copy-btn.copied { background: #059669; color: #fff; }
 
-    .playground-code {
-        margin:     0;
-        padding:    1rem 1rem 1rem 1.25rem;
-        overflow-x: auto;
+    pre {
+        margin:      0;
+        padding:     1rem 1rem 1rem 1.25rem;
+        overflow-x:  auto;
         font-family: 'Fira Code', 'Cascadia Code', monospace;
-        font-size:  0.8rem;
+        font-size:   0.8rem;
         line-height: 1.6;
-        color:      #cdd6f4;
+        color:       #cdd6f4;
     }
 
-    .playground-code code {
+    pre code {
         background: transparent;
         padding:    0;
         font-size:  inherit;
+    }
+
+    /* ── Playground contrôles ────────────────────────── */
+
+    .playground-section .preview {
+        border-radius: 0.5rem 0.5rem 0 0;
+        border-bottom: none;
+        margin-bottom: 0;
+    }
+
+    .playground-code-block {
+        position:      relative;
+        background:    #1e1e2e;
+        border:        1px solid #e5e7eb;
+        border-top:    none;
+    }
+
+    .controls-panel {
+        border:        1px solid #e5e7eb;
+        border-top:    none;
+        border-radius: 0 0 0.5rem 0.5rem;
+        padding:       1rem 1.5rem;
+        background:    #f9fafb;
+        display:       flex;
+        flex-wrap:     wrap;
+        gap:           1rem 2rem;
+        align-items:   start;
+    }
+
+    .control-row {
+        display:     flex;
+        flex-direction: column;
+        gap:         0.25rem;
+        min-width:   140px;
+    }
+
+    .control-label {
+        font-size:   0.75rem;
+        font-weight: 600;
+        color:       #6b7280;
+        font-family: 'Fira Code', 'Cascadia Code', monospace;
+    }
+
+    .control-row select,
+    .control-row input[type="text"],
+    .control-row input[type="number"] {
+        padding:       0.3rem 0.5rem;
+        border:        1px solid #d1d5db;
+        border-radius: 0.25rem;
+        font-size:     0.875rem;
+        background:    #fff;
+        color:         #111827;
+        width:         100%;
+    }
+
+    .control-row input[type="checkbox"] {
+        width:  1.1rem;
+        height: 1.1rem;
+        cursor: pointer;
+        margin-top: 0.2rem;
+    }
+
+    /* ── Encart parent ───────────────────────────────── */
+
+    .parent-notice {
+        display:       flex;
+        align-items:   center;
+        gap:           0.5rem;
+        padding:       0.75rem 1rem;
+        background:    color-mix(in srgb, var(--mr-color-primary-500, #2563eb) 8%, transparent);
+        border:        1px solid color-mix(in srgb, var(--mr-color-primary-500, #2563eb) 20%, transparent);
+        border-radius: 0.5rem;
+        font-size:     0.875rem;
+        color:         #374151;
+        margin:        1rem 0;
+    }
+
+    .parent-notice-icon {
+        font-size:   1.1rem;
+        font-weight: 700;
+        color:       var(--mr-color-primary-500, #2563eb);
+    }
+
+    .parent-notice a {
+        color:           var(--mr-color-primary-500, #2563eb);
+        text-decoration: none;
+        font-weight:     600;
+    }
+
+    .parent-notice a:hover {
+        text-decoration: underline;
     }
 </style>

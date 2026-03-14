@@ -65,10 +65,10 @@ interface Props {
 
 const { component } = Astro.props;
 
-// Filtrer les membres publics qui sont des propriétés (pas les méthodes privées)
-const publicProperties = (component.members ?? []).filter(
-    (m) => m.kind === 'field' && m.privacy !== 'private' && m.privacy !== 'protected',
-);
+function isColorValue(value: string | undefined): boolean {
+    if (!value) return false;
+    return /^#[0-9a-fA-F]{3,8}$/.test(value) || /^rgba?\(/.test(value);
+}
 ---
 
 <div class="component-api">
@@ -76,7 +76,7 @@ const publicProperties = (component.members ?? []).filter(
     {/* ── Attributs & Propriétés ── */}
     {component.attributes && component.attributes.length > 0 && (
         <section>
-            <h2>Attributs &amp; Propriétés</h2>
+            <h2 id="api-attributs">Attributs &amp; Propriétés</h2>
             <div class="table-wrap">
                 <table>
                     <thead>
@@ -105,7 +105,7 @@ const publicProperties = (component.members ?? []).filter(
     {/* ── Événements ── */}
     {component.events && component.events.length > 0 && (
         <section>
-            <h2>Événements</h2>
+            <h2 id="api-evenements">Événements</h2>
             <div class="table-wrap">
                 <table>
                     <thead>
@@ -132,7 +132,7 @@ const publicProperties = (component.members ?? []).filter(
     {/* ── CSS Parts ── */}
     {component.cssParts && component.cssParts.length > 0 && (
         <section>
-            <h2>CSS Parts</h2>
+            <h2 id="api-css-parts">CSS Parts</h2>
             <p class="hint">
                 Utilisez <code>::part(name)</code> pour styler ces éléments depuis l'extérieur.
             </p>
@@ -160,7 +160,7 @@ const publicProperties = (component.members ?? []).filter(
     {/* ── CSS Custom Properties ── */}
     {component.cssProperties && component.cssProperties.length > 0 && (
         <section>
-            <h2>CSS Custom Properties</h2>
+            <h2 id="api-css-props">CSS Custom Properties</h2>
             <div class="table-wrap">
                 <table>
                     <thead>
@@ -174,7 +174,16 @@ const publicProperties = (component.members ?? []).filter(
                         {component.cssProperties.map((prop) => (
                             <tr>
                                 <td><code>{prop.name}</code></td>
-                                <td><code>{prop.default ?? '—'}</code></td>
+                                <td>
+                                    {isColorValue(prop.default) && (
+                                        <span
+                                            class="swatch"
+                                            style={`background: ${prop.default}`}
+                                            title={prop.default}
+                                        />
+                                    )}
+                                    <code>{prop.default ?? '—'}</code>
+                                </td>
                                 <td>{prop.description ?? ''}</td>
                             </tr>
                         ))}
@@ -187,7 +196,7 @@ const publicProperties = (component.members ?? []).filter(
     {/* ── Slots ── */}
     {component.slots && component.slots.length > 0 && (
         <section>
-            <h2>Slots</h2>
+            <h2 id="api-slots">Slots</h2>
             <div class="table-wrap">
                 <table>
                     <thead>
@@ -263,5 +272,15 @@ const publicProperties = (component.members ?? []).filter(
         background: #f3f4f6;
         padding: 0.1em 0.35em;
         border-radius: 0.25em;
+    }
+
+    .swatch {
+        display:        inline-block;
+        width:          0.9rem;
+        height:         0.9rem;
+        border-radius:  0.2rem;
+        border:         1px solid #e5e7eb;
+        vertical-align: middle;
+        margin-right:   0.3rem;
     }
 </style>
