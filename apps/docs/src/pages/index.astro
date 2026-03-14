@@ -1,7 +1,6 @@
 ---
 import { getCollection } from 'astro:content';
 import Layout from '../layouts/Layout.astro';
-import ComponentNav from '../components/ComponentNav.astro';
 import manifest from '@cem';
 import { getSlug } from '../utils/tag-name.ts';
 
@@ -14,6 +13,7 @@ interface CemDeclaration {
 }
 
 interface ComponentListItem {
+    name: string;
     tagName: string;
     href:    string;
     summary: string | undefined;
@@ -29,58 +29,133 @@ const mdxByTag = Object.fromEntries(allMdx.map((e) => [e.data.tagName, e]));
 const componentList: ComponentListItem[] = allComponents
     .filter((c) => !mdxByTag[c.tagName!]?.data.parent)
     .map((c) => ({
+        name: c.name,
         tagName: c.tagName!,
         href:    '/components/' + getSlug(c.tagName!),
         summary: mdxByTag[c.tagName!]?.data.description ?? c.summary,
     }));
 ---
 
-<Layout title="Accueil">
-    <Fragment slot="nav">
-        <ComponentNav />
-    </Fragment>
+<Layout title="Accueil" showNav={false}>
 
-    <h1>mARIAnne</h1>
-    <p>Librairie de web components accessibles.</p>
+    <h1 class="nav-brand">m<span class="brand-accent">ARIA</span>nne</h1>
+    <p class="tagline">Design System — Librairie de web components accessibles.</p>
 
-    <h2>Composants disponibles</h2>
-    <ul class="component-list">
-        {componentList.map((c) => (
-        <li>
-            <a href="{c.href}">
-                <code>{c.tagName}</code>
-            </a>
-            {c.summary &&
-            <p class="summary">{c.summary}</p>
-            }
-        </li>
-        ))}
-    </ul>
+    <section>
+        <h2>Fondations</h2>
+        <p>Les bases du design system : tokens, typographie, couleurs et espacements.</p>
+        <ul class="card-list">
+            <li class="card">
+                <a href="/foundations/tokens" class="card-action">
+                    <strong>Design Tokens</strong>
+                    <span>Couleurs, typographie, espacements et formes</span>
+                </a>
+            </li>
+        </ul>
+    </section>
+
+    <section>
+        <h2>Composants</h2>
+        <ul class="card-list">
+            {componentList.map((c) => (
+            <li class="card">
+                <a href={c.href} class="card-action">
+                    <span class="card-name">{c.name}</span>
+                    <span class="card-description"></span>{c.summary && <span>{c.summary}</span>}</span>
+                </a>
+            </li>
+            ))}
+        </ul>
+    </section>
+
 </Layout>
 
 <style>
-    .component-list {
+    /* ── Marque ──────────────────────────────────────────────── */
+
+    .nav-brand {
+        display:         block;
+        font-weight:     800;
+        font-size:       3rem;
+        letter-spacing:  -0.02em;
+        color:           #1a1d26;
+        text-decoration: none;
+    }
+
+    .brand-accent {
+        color: var(--mr-color-primary-500, #2563eb);
+        /* font-weight: 700; */
+    }
+
+    .tagline {
+        font-size:     1.1rem;
+        color:         #4b5563;
+        margin-bottom: 2rem;
+    }
+
+    h2 {
+        font-size:      1.1rem;
+        font-weight:    600;
+        border-bottom:  1px solid #e5e7eb;
+        padding-bottom: 0.5rem;
+        margin:         2rem 0 0.75rem;
+    }
+
+    h2 + p {
+        font-size:     0.9rem;
+        color:         #6b7280;
+        margin-bottom: 1rem;
+    }
+
+    .card-list {
         list-style: none;
-        padding: 0;
-        margin: 1rem 0 0;
-        display: grid;
-        gap: 1rem;
+        padding:    0;
+        margin:     0;
+        display:    flex;
+        flex-wrap: wrap;
+        gap:        0.75rem;
     }
 
-    .component-list a {
-        font-weight: 500;
+    .card {
+        display:         block;
+        border:          1px solid #e5e7eb;
+        border-radius:   0.5rem;
+        text-decoration: none;
+        width: 25%;
+        transition:      border-color 0.15s, box-shadow 0.15s;
     }
 
-    .component-list code {
-        font-size: 0.85em;
-        background: #f3f4f6;
-        padding: 0.1em 0.35em;
-        border-radius: 0.25em;
+    .card-action {
+        display: flex;
+        flex-direction: column;
+        row-gap: .25rem;
+        text-decoration: none;
+        padding:         1rem 1.25rem;
+
+        &:active {
+            color:           #374151;
+        }
+
+        &:active {
+            color:           #374151;
+        }
     }
 
-    .component-list .summary {
-        margin: 0.25rem 0 0;
-        font-size: 0.875rem;
-        color: #6b7280;
+    .card:hover {
+        border-color: #2563eb;
+        box-shadow:   0 0 0 1px #2563eb;
+
+        .card-name {
+            text-decoration: underline;
+        }
+    }
+
+    .card-name {
+        font-size:     1rem;
+        color: var(--mr-color-primary-500, #2563eb);
+        font-weight: 700;
+        border-radius: 0.25rem;
+        display: inline-block;
+
     }
 </style>

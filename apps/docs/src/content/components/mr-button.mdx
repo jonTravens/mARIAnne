@@ -2,65 +2,74 @@
 tagName: mr-button
 title: Button
 description: Bouton accessible et personnalisable via CSS custom properties.
+playgroundTemplate: filled
 variants:
-  - name: Filled
-    description: Variante par défaut, fond coloré.
-    html: |
-      <mr-button>Filled</mr-button>
+    - name: filled
+      label: Filled
+      description: Variante par défaut, fond coloré.
+      html: |
+          <mr-button>Filled</mr-button>
 
-  - name: Outlined
-    description: Contour sans fond, pour les actions secondaires.
-    html: |
-      <mr-button variant="outlined">Outlined</mr-button>
+    - name: outlined
+      label: Outlined
+      description: Contour sans fond, pour les actions secondaires.
+      html: |
+          <mr-button variant="outlined">Outlined</mr-button>
 
-  - name: Ghost
-    description: Sans fond ni contour, pour les actions tertiaires.
-    html: |
-      <mr-button variant="ghost">Ghost</mr-button>
+    - name: ghost
+      label: Ghost
+      description: Sans fond ni contour, pour les actions tertiaires.
+      html: |
+          <mr-button variant="ghost">Ghost</mr-button>
 
-  - name: Danger
-    description: Action destructrice ou irréversible.
-    html: |
-      <mr-button variant="danger">Danger</mr-button>
+    - name: danger
+      label: Danger
+      description: Action destructrice ou irréversible.
+      html: |
+          <mr-button variant="danger">Danger</mr-button>
 
-  - name: Tailles
-    description: Les trois tailles disponibles côte à côte.
-    html: |
-      <div style="display:flex; align-items:center; gap:1rem; flex-wrap:wrap;">
-        <mr-button size="small">Small</mr-button>
-        <mr-button size="medium">Medium</mr-button>
-        <mr-button size="large">Large</mr-button>
-      </div>
+    - name: sizes
+      label: Tailles
+      description: Les trois tailles disponibles côte à côte.
+      html: |
+          <div style="display:flex; align-items:center; gap:1rem; flex-wrap:wrap;">
+            <mr-button size="small">Small</mr-button>
+            <mr-button size="medium">Medium</mr-button>
+            <mr-button size="large">Large</mr-button>
+          </div>
 
-  - name: Disabled
-    description: État désactivé — aucun événement n'est émis.
-    html: |
-      <mr-button disabled>Disabled</mr-button>
+    - name: disabled
+      label: Disabled
+      description: État désactivé — aucun événement n'est émis.
+      html: |
+          <mr-button disabled>Disabled</mr-button>
 
-  - name: Avec icônes
-    description: Utilisation des slots prefix et suffix.
-    html: |
-      <div style="display:flex; gap:1rem; flex-wrap:wrap;">
-        <mr-button>
-          <span slot="prefix">←</span>
-          Retour
-        </mr-button>
-        <mr-button>
-          Suivant
-          <span slot="suffix">→</span>
-        </mr-button>
-      </div>
+    - name: icons
+      label: Avec icônes
+      description: Utilisation des slots prefix et suffix.
+      html: |
+          <div style="display:flex; gap:1rem; flex-wrap:wrap;">
+            <mr-button>
+              <span slot="prefix">←</span>
+              Retour
+            </mr-button>
+            <mr-button>
+              Suivant
+              <span slot="suffix">→</span>
+            </mr-button>
+          </div>
 
-  - name: Toutes les variantes
-    description: Aperçu complet de toutes les combinaisons.
-    html: |
-      <div style="display:flex; gap:1rem; flex-wrap:wrap; align-items:center;">
-        <mr-button>Filled</mr-button>
-        <mr-button variant="outlined">Outlined</mr-button>
-        <mr-button variant="ghost">Ghost</mr-button>
-        <mr-button variant="danger">Danger</mr-button>
-        <mr-button disabled>Disabled</mr-button>
-      </div>
+    - name: all
+      label: Toutes les variantes
+      description: Aperçu complet de toutes les combinaisons.
+      html: |
+          <div style="display:flex; gap:1rem; flex-wrap:wrap; align-items:center;">
+            <mr-button>Filled</mr-button>
+            <mr-button variant="outlined">Outlined</mr-button>
+            <mr-button variant="ghost">Ghost</mr-button>
+            <mr-button variant="danger">Danger</mr-button>
+            <mr-button disabled>Disabled</mr-button>
+          </div>
 ---
 
 Le composant `mr-button` s'adapte à tous les contextes via ses variantes et ses CSS custom properties.

@@ -1,13 +1,24 @@
 ---
 import { getCollection } from 'astro:content';
 import Layout from '../../layouts/Layout.astro';
-import ComponentApi from '../../components/ComponentApi.astro';
-import ComponentNav from '../../components/ComponentNav.astro';
 import Playground from '../../components/Playground.astro';
+import TableOfContents from '../../components/TableOfContents.astro';
 import manifest from '@cem';
 import { getSlug } from '../../utils/tag-name.ts';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
+
+interface CemMember {
+    kind:        string;
+    name:        string;
+    attribute?:  string;
+    privacy?:    string;
+    static?:     boolean;
+    readonly?:   boolean;
+    type?:       { text: string };
+    default?:    string;
+    description?: string;
+}
 
 interface CemDeclaration {
     kind:           string;
@@ -16,15 +27,36 @@ interface CemDeclaration {
     name:           string;
     summary?:       string;
     description?:   string;
+    members?:       CemMember[];
     attributes?:    unknown[];
     events?:        unknown[];
     cssParts?:      unknown[];
     cssProperties?: unknown[];
     slots?:         unknown[];
-    members?:       unknown[];
+    'x-display'?:   'demo' | 'docs';
+    'x-parent'?:    string;
 }
 
 type MdxEntry = Awaited<ReturnType<typeof getCollection<'components'>>>[number];
+
+// ─── Détection du type de contrôle depuis le type CEM ─────────────────────────
+
+function isStringUnion(typeText: string): boolean {
+    const clean = typeText.replace(/\s*\|\s*(undefined|null)/g, '').trim();
+    const parts = clean.split(/\s*\|\s*/);
+    return parts.length > 1 && parts.every((p) => /^['"][^'"]+['"]$/.test(p));
+}
+
+function getOptions(typeText: string): string[] {
+    return typeText
+        .replace(/\s*\|\s*(undefined|null)/g, '')
+        .split(/\s*\|\s*/)
+        .map((p) => p.replace(/^['"]|['"]$/g, ''));
+}
+
+function hasUndefined(typeText: string): boolean {
+    return /\bundefined\b/.test(typeText);
+}
 
 // ─── Routes statiques ─────────────────────────────────────────────────────────
 
@@ -51,30 +83,88 @@ const { component, mdx } = Astro.props as {
 
 const { Content } = mdx ? await mdx.render() : { Content: null };
 
-const variants  = mdx?.data.variants ?? [];
-const pageTitle = mdx?.data.title ?? component.name;
-const pageDesc  = mdx?.data.description ?? component.summary;
+const variants    = mdx?.data.variants ?? [];
+const pageTitle   = mdx?.data.title ?? component.name;
+const pageDesc    = mdx?.data.description ?? component.summary;
+const displayMode = component['x-display'] ?? 'demo';
+const parentTag   = component['x-parent'];
 
-// Cast typé une seule fois pour éviter l'expression complexe dans le template
-type ComponentApiProps = Parameters<typeof ComponentApi>[0]['component'];
-const apiComponent = component as ComponentApiProps;
+// ─── HTML initial du playground ───────────────────────────────────────────────
+
+const playgroundVariantName = mdx?.data.playgroundTemplate;
+const playgroundVariant = playgroundVariantName
+    ? variants.find((v: { name: string }) => v.name === playgroundVariantName)
+    : variants[0];
+const playgroundHtml = playgroundVariant?.html ?? '';
+
+// ─── Contrôles du playground ──────────────────────────────────────────────────
+
+const controls = (component.members ?? [])
+    .filter(
+        (m) =>
+            m.kind === 'field' &&
+            m.privacy !== 'private' &&
+            m.privacy !== 'protected' &&
+            m.attribute &&
+            !m.readonly,
+    )
+    .map((m) => {
+        const typeText    = m.type?.text ?? '';
+        const stringUnion = isStringUnion(typeText);
+        return {
+            attribute:    m.attribute!,
+            description:  m.description,
+            default:      m.default,
+            controlType:  stringUnion
+                ? ('select' as const)
+                : typeText === 'boolean'
+                    ? ('checkbox' as const)
+                    : typeText === 'number' || typeText === 'number | undefined'
+                        ? ('number' as const)
+                        : ('text' as const),
+            options:      stringUnion ? getOptions(typeText) : [],
+            addDefault:   stringUnion && hasUndefined(typeText),
+        };
+    });
+
+// ─── TOC ──────────────────────────────────────────────────────────────────────
+
+const tocEntries = [
+    ...(variants.length > 0
+        ? [
+            { id: 'exemples', label: 'Exemples', level: 1 as const },
+            ...variants.map((v: { name: string; label?: string }) => ({
+                id:    `exemple-${v.name}`,
+                label: v.label ?? v.name,
+                level: 2 as const,
+            })),
+          ]
+        : []),
+    ...(displayMode === 'demo'
+        ? [{ id: 'playground', label: 'Playground', level: 1 as const }]
+        : []),
+    { id: 'reference-api', label: 'Référence API', level: 1 as const },
+];
 ---
 
-<Layout title={pageTitle}>
-    <Fragment slot="nav">
-        <ComponentNav currentTag={component.tagName} />
-    </Fragment>
-
+<Layout
+    title={pageTitle}
+    currentPath={'/components/' + getSlug(component.tagName!)}
+    showToc={true}
+>
     <h1>{pageTitle}</h1>
     <code>&lt;{component.tagName}&gt;</code>
     {pageDesc && <p class="summary">{pageDesc}</p>}
 
-    {variants.length > 0 && (
-        <section>
-            <h2>Démo</h2>
-            <Playground variants={variants} id={component.tagName} />
-        </section>
-    )}
+    <Playground
+        variants={variants}
+        tagName={component.tagName!}
+        displayMode={displayMode}
+        parentTag={parentTag}
+        playgroundHtml={playgroundHtml}
+        controls={controls}
+        component={component}
+    />
 
     {Content && (
         <section class="narrative">
@@ -82,26 +172,17 @@ const apiComponent = component as ComponentApiProps;
         </section>
     )}
 
-    <ComponentApi component={apiComponent} />
+    <TableOfContents entries={tocEntries} slot="toc" />
 </Layout>
-
-<script type="module" src="/cdn/index.js"></script>
 
 <style>
     h1 { margin-bottom: 0.25rem; }
 
-    h1 code {
-        font-size:  1.75rem;
+    h1 + code {
+        font-size:  1rem;
         background: none;
         padding:    0;
-    }
-
-    h2 {
-        font-size:      1.1rem;
-        font-weight:    600;
-        border-bottom:  1px solid #e5e7eb;
-        padding-bottom: 0.5rem;
-        margin:         2rem 0 1rem;
+        color:      #6b7280;
     }
 
     .summary {

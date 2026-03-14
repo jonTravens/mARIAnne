@@ -5,8 +5,10 @@ import { defineCollection, z } from 'astro:content';
  * Chaque variante correspond à un état / une configuration pré-définie du composant.
  */
 const variantSchema = z.object({
-    /** Nom affiché dans la navigation des variantes */
+    /** Identifiant unique de la variante, utilisé comme référence dans defaultVariant */
     name: z.string(),
+    /** Libellé affiché dans l'onglet. Si absent, name est utilisé. */
+    label: z.string().optional(),
     /** Description courte affichée sous le nom */
     description: z.string().optional(),
     /** HTML brut injecté dans le playground pour cette variante */
@@ -26,8 +28,8 @@ const components = defineCollection({
         title: z.string(),
         /** Description courte affichée sous le titre */
         description: z.string().optional(),
-        /** Nom du tag du composant parent */
-        parent: z.string().optional(),
+        /** Nom de la variante dont le HTML initialise le playground interactif. Si absent, la première variante est utilisée. */
+        playgroundTemplate: z.string().optional(),
         /** Variantes pré-configurées affichées dans le playground */
         // variants: z.array(variantSchema).default([]),
         // coerce : si le champ est absent ou null dans le MDX, on force un array vide
