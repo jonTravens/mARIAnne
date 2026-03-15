@@ -7,10 +7,12 @@
  * et la référence API complète via ComponentApi.
  *
  * Tout le rendu des composants est server-side (Fragment set:html).
- * Le JS client gère uniquement la copie du code et les contrôles du playground.
+ * La coloration syntaxique est assurée par highlight.js (client-side, uniforme).
+ * Le JS client gère la copie du code, les contrôles du playground et le toggle preview.
  */
 
 import ComponentApi from './ComponentApi.astro';
+import { type CemDeclaration, type CemControl } from '../utils/cem-types.ts';
 
 interface Variant {
     name:         string;
@@ -19,38 +21,14 @@ interface Variant {
     html:         string;
 }
 
-interface CemControl {
-    attribute:    string;
-    description?: string;
-    controlType:  'select' | 'checkbox' | 'text' | 'number';
-    options:      string[];
-    default?:     string;
-    addDefault?:  boolean;
-}
-
-interface CemDeclaration {
-    kind:           string;
-    customElement?: boolean;
-    tagName?:       string;
-    name:           string;
-    summary?:       string;
-    description?:   string;
-    members?:       unknown[];
-    attributes?:    unknown[];
-    events?:        unknown[];
-    cssParts?:      unknown[];
-    cssProperties?: unknown[];
-    slots?:         unknown[];
-}
-
 interface Props {
-    variants:            Variant[];
-    tagName:             string;
-    displayMode:         'demo' | 'docs';
-    parentTag?:          string;
-    playgroundHtml:      string;
-    controls:            CemControl[];
-    component:           CemDeclaration;
+    variants:       Variant[];
+    tagName:        string;
+    displayMode:    'demo' | 'docs';
+    parentTag?:     string;
+    playgroundHtml: string;
+    controls:       CemControl[];
+    component:      CemDeclaration;
 }
 
 const {
@@ -66,6 +44,10 @@ const {
 const showPlayground = displayMode === 'demo';
 ---
 
+{/* ── highlight.js — chargé une seule fois, colore tous les blocs de la page ── */}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.10.0/styles/github-dark.min.css" />
+<script is:inline src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.10.0/highlight.min.js"></script>
+
 {/* ── Exemples (variantes) ── */}
 {variants.length > 0 && (
     <section class="examples-section" id="exemples">
@@ -76,14 +58,18 @@ const showPlayground = displayMode === 'demo';
                 {variant.description && (
                     <p class="variant-description">{variant.description}</p>
                 )}
-                <div class="preview">
-                    <Fragment set:html={variant.html} />
+                <div class="preview-wrap">
+                    <button class="preview-theme-toggle" data-preview-toggle aria-label="Basculer le thème de la preview">
+                        <svg class="icon-sun" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:none"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+                        <svg class="icon-moon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+                    </button>
+                    <div class="preview" data-theme="light">
+                        <Fragment set:html={variant.html} />
+                    </div>
                 </div>
                 <div class="code-block">
-                    <button class="copy-btn" data-copy aria-label="Copier le code">
-                        Copier
-                    </button>
-                    <pre><code>{variant.html.trim()}</code></pre>
+                    <button class="copy-btn" data-copy aria-label="Copier le code">Copier</button>
+                    <pre><code class="language-html">{variant.html.trim()}</code></pre>
                 </div>
             </section>
         ))}
@@ -93,7 +79,7 @@ const showPlayground = displayMode === 'demo';
 {/* ── Encart parent pour les sous-composants ── */}
 {parentTag && (
     <div class="parent-notice">
-        <span class="parent-notice-icon">&#8593;</span>
+        {/* <span class="parent-notice-icon">&#8593;</span> */}
         Ce composant est un sous-composant de
         <a href={`/components/${parentTag.replace(/^mr-/, '')}`}>
             <code>&lt;{parentTag}&gt;</code>
@@ -105,12 +91,19 @@ const showPlayground = displayMode === 'demo';
 {showPlayground && (
     <section class="playground-section" id="playground" data-playground data-tag-name={tagName}>
         <h2>Playground</h2>
-        <div class="preview" data-playground-preview>
-            <Fragment set:html={playgroundHtml} />
+        <div class="preview-wrap">
+            <button class="preview-theme-toggle" data-preview-toggle aria-label="Basculer le thème de la preview">
+                <svg class="icon-sun" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:none"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+                <svg class="icon-moon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+            </button>
+            <div class="preview" data-playground-preview data-theme="light">
+                <Fragment set:html={playgroundHtml} />
+            </div>
         </div>
         <div class="playground-code-block">
             <button class="copy-btn" data-copy-playground aria-label="Copier le code">Copier</button>
-            <pre><code data-playground-code>{playgroundHtml.trim()}</code></pre>
+            {/* Le <pre><code> est mis à jour par playground.js après chaque changement de contrôle */}
+            <pre data-playground-pre><code class="language-html" data-playground-code>{playgroundHtml.trim()}</code></pre>
         </div>
 
         {controls.length > 0 && (
@@ -184,10 +177,10 @@ const showPlayground = displayMode === 'demo';
     h2 {
         font-size:      1.25rem;
         font-weight:    700;
-        border-bottom:  2px solid #e5e7eb;
+        border-bottom:  2px solid var(--doc-border, #e5e7eb);
         padding-bottom: 0.5rem;
         margin-bottom:  1.5rem;
-        color:          #111827;
+        color:          var(--doc-text, #111827);
     }
 
     /* ── Variantes ─────────────────────────────────────── */
@@ -199,18 +192,45 @@ const showPlayground = displayMode === 'demo';
     h3 {
         font-size:     1rem;
         font-weight:   600;
-        color:         #374151;
+        color:         var(--doc-text, #374151);
         margin-bottom: 0.5rem;
     }
 
     .variant-description {
         font-size:     0.875rem;
-        color:         #6b7280;
+        color:         var(--doc-text-muted, #6b7280);
         font-style:    italic;
         margin-bottom: 0.75rem;
     }
 
     /* ── Preview ─────────────────────────────────────── */
+
+    .preview-wrap {
+        position: relative;
+    }
+
+    .preview-theme-toggle {
+        position:        absolute;
+        top:             0.5rem;
+        right:           0.5rem;
+        z-index:         10;
+        display:         flex;
+        align-items:     center;
+        justify-content: center;
+        width:           1.75rem;
+        height:          1.75rem;
+        background:      rgba(255, 255, 255, 0.75);
+        backdrop-filter: blur(4px);
+        border:          1px solid rgba(0, 0, 0, 0.12);
+        border-radius:   0.375rem;
+        cursor:          pointer;
+        color:           #374151;
+        transition:      background 0.15s;
+    }
+
+    .preview-theme-toggle:hover {
+        background: rgba(255, 255, 255, 0.95);
+    }
 
     .preview {
         display:       flex;
@@ -218,19 +238,45 @@ const showPlayground = displayMode === 'demo';
         gap:           0.75rem;
         align-items:   center;
         padding:       2rem;
-        background:    #fff;
-        border:        1px solid #e5e7eb;
+        border:        1px solid var(--doc-border, #e5e7eb);
         border-radius: 0.5rem 0.5rem 0 0;
+    }
+
+    .preview[data-theme="light"] {
+        background:             #ffffff;
+        --mr-color-primary-50:  #eff6ff;
+        --mr-color-primary-100: #dbeafe;
+        --mr-color-primary-500: #2563eb;
+        --mr-color-primary-600: #1d4ed8;
+        --mr-color-neutral-50:  #f9fafb;
+        --mr-color-neutral-100: #f3f4f6;
+        --mr-color-neutral-200: #e5e7eb;
+        --mr-color-neutral-700: #374151;
+        --mr-color-neutral-900: #111827;
+    }
+
+    .preview[data-theme="dark"] {
+        background:             #0f1117;
+        --mr-color-primary-50:  #1e2a40;
+        --mr-color-primary-100: #1e3a5f;
+        --mr-color-primary-500: #3b82f6;
+        --mr-color-primary-600: #2563eb;
+        --mr-color-neutral-50:  #161b22;
+        --mr-color-neutral-100: #21262d;
+        --mr-color-neutral-200: #30363d;
+        --mr-color-neutral-700: #8b949e;
+        --mr-color-neutral-900: #e6edf3;
     }
 
     /* ── Code block ─────────────────────────────────── */
 
-    .code-block {
+    .code-block,
+    .playground-code-block {
         position:      relative;
-        background:    #1e1e2e;
-        border:        1px solid #e5e7eb;
+        border:        1px solid var(--doc-border, #e5e7eb);
         border-top:    none;
         border-radius: 0 0 0.5rem 0.5rem;
+        overflow:      hidden;
     }
 
     .copy-btn {
@@ -238,7 +284,7 @@ const showPlayground = displayMode === 'demo';
         top:           0.5rem;
         right:         0.5rem;
         padding:       0.25rem 0.6rem;
-        background:    #374151;
+        background:    rgba(55, 65, 81, 0.85);
         color:         #d1d5db;
         border:        none;
         border-radius: 0.25rem;
@@ -248,46 +294,43 @@ const showPlayground = displayMode === 'demo';
         z-index:       1;
     }
 
-    .copy-btn:hover  { background: #4b5563; }
+    .copy-btn:hover  { background: rgba(75, 85, 99, 0.95); }
     .copy-btn.copied { background: #059669; color: #fff; }
 
-    pre {
+    /* highlight.js gère le background via son thème CSS — on aligne juste la typo */
+    :global(.code-block pre),
+    :global(.playground-code-block pre) {
         margin:      0;
-        padding:     1rem 1rem 1rem 1.25rem;
+        padding:     1rem 1.25rem;
         overflow-x:  auto;
         font-family: 'Fira Code', 'Cascadia Code', monospace;
         font-size:   0.8rem;
         line-height: 1.6;
-        color:       #cdd6f4;
+        background:  #0d1117; /* github-dark background */
     }
 
-    pre code {
-        background: transparent;
-        padding:    0;
-        font-size:  inherit;
+    :global(.code-block pre code),
+    :global(.playground-code-block pre code) {
+        font-family: inherit;
+        font-size:   inherit;
+        padding:     0;
+        background:  transparent;
     }
 
     /* ── Playground contrôles ────────────────────────── */
 
+    .playground-section .preview-wrap { margin-bottom: 0; }
     .playground-section .preview {
         border-radius: 0.5rem 0.5rem 0 0;
         border-bottom: none;
-        margin-bottom: 0;
-    }
-
-    .playground-code-block {
-        position:      relative;
-        background:    #1e1e2e;
-        border:        1px solid #e5e7eb;
-        border-top:    none;
     }
 
     .controls-panel {
-        border:        1px solid #e5e7eb;
+        border:        1px solid var(--doc-border, #e5e7eb);
         border-top:    none;
         border-radius: 0 0 0.5rem 0.5rem;
         padding:       1rem 1.5rem;
-        background:    #f9fafb;
+        background:    var(--doc-nav-bg, #f9fafb);
         display:       flex;
         flex-wrap:     wrap;
         gap:           1rem 2rem;
@@ -295,16 +338,16 @@ const showPlayground = displayMode === 'demo';
     }
 
     .control-row {
-        display:     flex;
+        display:        flex;
         flex-direction: column;
-        gap:         0.25rem;
-        min-width:   140px;
+        gap:            0.25rem;
+        min-width:      140px;
     }
 
     .control-label {
         font-size:   0.75rem;
         font-weight: 600;
-        color:       #6b7280;
+        color:       var(--doc-text-muted, #6b7280);
         font-family: 'Fira Code', 'Cascadia Code', monospace;
     }
 
@@ -312,18 +355,18 @@ const showPlayground = displayMode === 'demo';
     .control-row input[type="text"],
     .control-row input[type="number"] {
         padding:       0.3rem 0.5rem;
-        border:        1px solid #d1d5db;
+        border:        1px solid var(--doc-border, #d1d5db);
         border-radius: 0.25rem;
         font-size:     0.875rem;
-        background:    #fff;
-        color:         #111827;
+        background:    var(--doc-bg, #fff);
+        color:         var(--doc-text, #111827);
         width:         100%;
     }
 
     .control-row input[type="checkbox"] {
-        width:  1.1rem;
-        height: 1.1rem;
-        cursor: pointer;
+        width:      1.1rem;
+        height:     1.1rem;
+        cursor:     pointer;
         margin-top: 0.2rem;
     }
 
@@ -338,7 +381,7 @@ const showPlayground = displayMode === 'demo';
         border:        1px solid color-mix(in srgb, var(--mr-color-primary-500, #2563eb) 20%, transparent);
         border-radius: 0.5rem;
         font-size:     0.875rem;
-        color:         #374151;
+        color:         var(--doc-text, #374151);
         margin:        1rem 0;
     }
 
@@ -354,7 +397,5 @@ const showPlayground = displayMode === 'demo';
         font-weight:     600;
     }
 
-    .parent-notice a:hover {
-        text-decoration: underline;
-    }
+    .parent-notice a:hover { text-decoration: underline; }
 </style>

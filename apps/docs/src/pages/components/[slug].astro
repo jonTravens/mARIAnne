@@ -5,65 +5,14 @@ import Playground from '../../components/Playground.astro';
 import TableOfContents from '../../components/TableOfContents.astro';
 import manifest from '@cem';
 import { getSlug } from '../../utils/tag-name.ts';
-
-// ─── Types ────────────────────────────────────────────────────────────────────
-
-interface CemMember {
-    kind:        string;
-    name:        string;
-    attribute?:  string;
-    privacy?:    string;
-    static?:     boolean;
-    readonly?:   boolean;
-    type?:       { text: string };
-    default?:    string;
-    description?: string;
-}
-
-interface CemDeclaration {
-    kind:           string;
-    customElement?: boolean;
-    tagName?:       string;
-    name:           string;
-    summary?:       string;
-    description?:   string;
-    members?:       CemMember[];
-    attributes?:    unknown[];
-    events?:        unknown[];
-    cssParts?:      unknown[];
-    cssProperties?: unknown[];
-    slots?:         unknown[];
-    'x-display'?:   'demo' | 'docs';
-    'x-parent'?:    string;
-}
+import { type CemDeclaration, getCustomElements, buildControls } from '../../utils/cem-types.ts';
 
 type MdxEntry = Awaited<ReturnType<typeof getCollection<'components'>>>[number];
-
-// ─── Détection du type de contrôle depuis le type CEM ─────────────────────────
-
-function isStringUnion(typeText: string): boolean {
-    const clean = typeText.replace(/\s*\|\s*(undefined|null)/g, '').trim();
-    const parts = clean.split(/\s*\|\s*/);
-    return parts.length > 1 && parts.every((p) => /^['"][^'"]+['"]$/.test(p));
-}
-
-function getOptions(typeText: string): string[] {
-    return typeText
-        .replace(/\s*\|\s*(undefined|null)/g, '')
-        .split(/\s*\|\s*/)
-        .map((p) => p.replace(/^['"]|['"]$/g, ''));
-}
-
-function hasUndefined(typeText: string): boolean {
-    return /\bundefined\b/.test(typeText);
-}
 
 // ─── Routes statiques ─────────────────────────────────────────────────────────
 
 export async function getStaticPaths() {
-    const components: CemDeclaration[] = manifest.modules
-        .flatMap((m: { declarations?: CemDeclaration[] }) => m.declarations ?? [])
-        .filter((d: CemDeclaration) => d.kind === 'class' && d.customElement === true);
+    const components: CemDeclaration[] = getCustomElements(manifest);
 
     const mdxEntries = await getCollection('components');
     const mdxByTag   = Object.fromEntries(mdxEntries.map((e) => [e.data.tagName, e]));
@@ -99,33 +48,7 @@ const playgroundHtml = playgroundVariant?.html ?? '';
 
 // ─── Contrôles du playground ──────────────────────────────────────────────────
 
-const controls = (component.members ?? [])
-    .filter(
-        (m) =>
-            m.kind === 'field' &&
-            m.privacy !== 'private' &&
-            m.privacy !== 'protected' &&
-            m.attribute &&
-            !m.readonly,
-    )
-    .map((m) => {
-        const typeText    = m.type?.text ?? '';
-        const stringUnion = isStringUnion(typeText);
-        return {
-            attribute:    m.attribute!,
-            description:  m.description,
-            default:      m.default,
-            controlType:  stringUnion
-                ? ('select' as const)
-                : typeText === 'boolean'
-                    ? ('checkbox' as const)
-                    : typeText === 'number' || typeText === 'number | undefined'
-                        ? ('number' as const)
-                        : ('text' as const),
-            options:      stringUnion ? getOptions(typeText) : [],
-            addDefault:   stringUnion && hasUndefined(typeText),
-        };
-    });
+const controls = buildControls(component.members ?? []);
 
 // ─── TOC ──────────────────────────────────────────────────────────────────────
 
@@ -152,9 +75,15 @@ const tocEntries = [
     currentPath={'/components/' + getSlug(component.tagName!)}
     showToc={true}
 >
-    <h1>{pageTitle}</h1>
+    {/* TOC mobile : visible uniquement sur mobile, injectée dans le flux principal */}
+    <div class="toc-mobile-inline">
+        <TableOfContents entries={tocEntries} mobileOnly={true} />
+    </div>
+
+    <h2>{pageTitle}</h2>
     <code>&lt;{component.tagName}&gt;</code>
     {pageDesc && <p class="summary">{pageDesc}</p>}
+
 
     <Playground
         variants={variants}
@@ -176,24 +105,30 @@ const tocEntries = [
 </Layout>
 
 <style>
+    /* La version desktop de la TOC inline est masquée — seul le <details> mobile s'affiche */
+    .toc-mobile-inline { display: none; }
+    @media (max-width: 768px) {
+        .toc-mobile-inline { display: block; }
+    }
+
     h1 { margin-bottom: 0.25rem; }
 
     h1 + code {
         font-size:  1rem;
         background: none;
         padding:    0;
-        color:      #6b7280;
+        color:      var(--doc-text-muted, #6b7280);
     }
 
     .summary {
         font-size:     1.05rem;
-        color:         #4b5563;
+        color:         var(--doc-text-muted, #4b5563);
         margin-bottom: 0.25rem;
     }
 
     .narrative {
         margin:      1.5rem 0;
-        color:       #374151;
+        color:       var(--doc-text, #374151);
         line-height: 1.7;
     }
 
@@ -201,7 +136,8 @@ const tocEntries = [
 
     .narrative :global(code) {
         font-size:     0.85em;
-        background:    #f3f4f6;
+        background:    var(--doc-nav-bg, #f3f4f6);
+        color:         var(--doc-text, #111827);
         padding:       0.1em 0.35em;
         border-radius: 0.25em;
     }

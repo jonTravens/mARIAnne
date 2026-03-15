@@ -3,31 +3,22 @@ import { getCollection } from 'astro:content';
 import Layout from '../layouts/Layout.astro';
 import manifest from '@cem';
 import { getSlug } from '../utils/tag-name.ts';
-
-interface CemDeclaration {
-    kind:           string;
-    customElement?: boolean;
-    tagName?:       string;
-    name:           string;
-    summary?:       string;
-}
+import { type CemDeclaration, getCustomElements } from '../utils/cem-types.ts';
 
 interface ComponentListItem {
-    name: string;
+    name:    string;
     tagName: string;
     href:    string;
     summary: string | undefined;
 }
 
-const allComponents: CemDeclaration[] = manifest.modules
-    .flatMap((m: { declarations?: CemDeclaration[] }) => m.declarations ?? [])
-    .filter((d: CemDeclaration) => d.kind === 'class' && d.customElement === true);
+const allComponents: CemDeclaration[] = getCustomElements(manifest);
 
 const allMdx   = await getCollection('components');
 const mdxByTag = Object.fromEntries(allMdx.map((e) => [e.data.tagName, e]));
 
 const componentList: ComponentListItem[] = allComponents
-    .filter((c) => !mdxByTag[c.tagName!]?.data.parent)
+    .filter((c) => !c['x-parent'])
     .map((c) => ({
         name: c.name,
         tagName: c.tagName!,
@@ -37,10 +28,6 @@ const componentList: ComponentListItem[] = allComponents
 ---
 
 <Layout title="Accueil" showNav={false}>
-
-    <h1 class="nav-brand">m<span class="brand-accent">ARIA</span>nne</h1>
-    <p class="tagline">Design System — Librairie de web components accessibles.</p>
-
     <section>
         <h2>Fondations</h2>
         <p>Les bases du design system : tokens, typographie, couleurs et espacements.</p>
