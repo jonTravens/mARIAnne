@@ -144,18 +144,21 @@ The docs site is a custom Astro 5 + MDX static site. **No Starlight, no api-view
 
 **Key files:**
 
-| File                                   | Role                                                                                         |
-| -------------------------------------- | -------------------------------------------------------------------------------------------- |
-| `src/pages/components/[slug].astro`    | Dynamic route — resolves playground HTML, builds controls array from CEM, builds TOC entries |
-| `src/components/Playground.astro`      | Variants + playground + ComponentApi; loads `public/js/playground.js`                        |
-| `src/components/ComponentApi.astro`    | API tables from CEM; color swatches on CSS custom property defaults                          |
-| `src/components/TableOfContents.astro` | Sticky TOC right column; receives `entries[]` via props                                      |
-| `src/components/SiteNav.astro`         | Left nav; auto-generated from CEM with parent/child hierarchy                                |
-| `src/layouts/Layout.astro`             | 3-column grid (`260px 1fr 220px`) when `showToc={true}`                                      |
-| `src/content/config.ts`                | Zod schema for MDX frontmatter                                                               |
-| `public/js/playground.js`              | Copy buttons + live attribute manipulation via `setAttribute`                                |
-| `src/utils/parse-tokens.ts`            | Parses `default.css` and categorizes CSS custom properties                                   |
-| `src/pages/foundations/tokens.astro`   | Design tokens page; auto-extracts from theme CSS                                             |
+| File                                   | Role                                                                                  |
+| -------------------------------------- | ------------------------------------------------------------------------------------- |
+| `src/pages/components/[slug].astro`    | Dynamic route — resolves playground HTML, calls `buildControls()`, builds TOC entries |
+| `src/components/Playground.astro`      | Variants + playground + ComponentApi; loads `public/js/playground.js`                 |
+| `src/components/ComponentApi.astro`    | API tables from CEM; color swatches on CSS custom property defaults                   |
+| `src/components/TableOfContents.astro` | Sticky TOC right column; receives `entries[]` via props                               |
+| `src/components/SiteNav.astro`         | Left nav; auto-generated from CEM with parent/child hierarchy                         |
+| `src/layouts/Layout.astro`             | 3-column grid (`260px 1fr 220px`) when `showToc={true}`                               |
+| `src/content/config.ts`                | Zod schema for MDX frontmatter                                                        |
+| `public/js/playground.js`              | Copy buttons + live attribute manipulation via `setAttribute`                         |
+| `src/utils/cem-types.ts`               | Shared CEM TypeScript types + helpers (`getCustomElements`, `buildControls`)          |
+| `src/utils/parse-tokens.ts`            | Parses `default.css` and categorizes CSS custom properties                            |
+| `src/utils/tag-name.ts`                | `getSlug()`, `getPrefix()`, `groupByPrefix()` helpers                                 |
+| `src/styles/doc-table.css`             | Shared table styles used by ComponentApi and tokens page                              |
+| `src/pages/foundations/tokens.astro`   | Design tokens page; auto-extracts from theme CSS                                      |
 
 **MDX frontmatter schema** (per component content file):
 
@@ -171,7 +174,10 @@ variants:
       html: '<mr-button>Label</mr-button>'
 ```
 
-**Playground control type detection** (in `[slug].astro`):
+> **Sub-components**: use only `@parent mr-<tag>` JSDoc in the Lit class. No MDX field needed —
+> the CEM `x-parent` field is read directly by the nav and home page to filter and nest the component.
+
+**Playground control type detection** (in `src/utils/cem-types.ts` → `buildControls()`):
 
 | CEM type                         | Control                                              |
 | -------------------------------- | ---------------------------------------------------- |
