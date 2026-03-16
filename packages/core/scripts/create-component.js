@@ -143,21 +143,47 @@ export default css\`
 
 const testTemplate = `import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import type { ${className} } from './${fileName}.js';
+import { fixture, waitForUpdate, getPart, requirePart } from '../../test-utils.js';
 import './${fileName}.js';
 
-async function fixture(html: string): Promise<${className}> {
-    const template = document.createElement('template');
-    template.innerHTML = html.trim();
-    const el = template.content.firstElementChild as ${className};
-    document.body.appendChild(el);
-    await (el as unknown as { updateComplete: Promise<boolean> }).updateComplete;
-    return el;
-}
+// ─── Aide-mémoire tests Lit ────────────────────────────────────────────────────
+//
+// fixture(html)          — monte un élément dans le DOM et attend le premier rendu
+// waitForUpdate(el)      — attend le prochain cycle de rendu après une mutation
+// getPart(el, 'name')    — retourne un part="name" du Shadow DOM (| null)
+//                          → utiliser pour les assertions .toBeNull() / .not.toBeNull()
+// requirePart(el, 'name')— idem, mais lance une erreur si absent
+//                          → utiliser quand on enchaîne .getAttribute, .classList, etc.
+//
+// ⚠ happy-dom ne sérialise pas les Text nodes dynamiques Lit en textContent.
+//   Tester le contenu textuel via la propriété JS (el.myProp) plutôt que textContent.
+//
+// ⚠ Les propriétés ARIA assignées via .ariaCurrent, .ariaExpanded, etc. (liaisons
+//   Lit) ne reflètent pas en attribut HTML dans happy-dom. Tester la propriété
+//   JS : (el as unknown as { ariaCurrent: string }).ariaCurrent.
+//
+// ─── Éléments à tester selon le type de composant ─────────────────────────────
+//
+// Composant standard (avec Shadow DOM) :
+//   - Rendu : shadowRoot non null, parts présents (getPart)
+//   - Valeurs par défaut : vérifier chaque propriété à l'état initial
+//   - Attributs reflect : el.prop = x → await waitForUpdate → el.getAttribute(...)
+//   - Comportement : interactions (clic, événements custom)
+//   - Accessibilité : role, aria-*, labels sr-only
+//
+// Sous-composant (sans Shadow DOM, createRenderRoot → this) :
+//   - shadowRoot est null
+//   - setRegistry() appelle registerItem / unregisterItem
+//   - disconnectedCallback() appelle unregisterItem
+//   - updated() appelle notifyItemChanged après le premier rendu seulement
+// ──────────────────────────────────────────────────────────────────────────────
 
 describe('${className}', () => {
     let el: ${className};
 
     afterEach(() => el?.remove());
+
+    // ── Rendu ─────────────────────────────────────────────────────────────────
 
     describe('rendu', () => {
         beforeEach(async () => {
@@ -169,9 +195,17 @@ describe('${className}', () => {
         });
 
         it('contient un élément racine avec part="base"', () => {
-            expect(el.shadowRoot!.querySelector('[part="base"]')).not.toBeNull();
+            expect(getPart(el, 'base')).not.toBeNull();
         });
     });
+
+    // ── Valeurs par défaut ────────────────────────────────────────────────────
+
+    // describe('valeurs par défaut', () => { ... });
+
+    // ── Propriétés ────────────────────────────────────────────────────────────
+
+    // describe('propriétés', () => { ... });
 });
 `;
 
@@ -250,6 +284,8 @@ console.log(`   1. Implémenter  src/components/${dirName}/${fileName}.ts`);
 console.log(`   2. Styles dans  src/components/${dirName}/${fileName}.styles.ts`);
 console.log(`   3. Tests dans   src/components/${dirName}/${fileName}.test.ts`);
 if (hasDocs) {
-    console.log(`   4. Compléter les démo des variantes dans apps/docs/src/content/components/${tagName}.mdx`);
+    console.log(
+        `   4. Compléter les démo des variantes dans apps/docs/src/content/components/${tagName}.mdx`,
+    );
 }
 console.log('');

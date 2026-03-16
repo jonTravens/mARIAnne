@@ -1,55 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { MrButton } from './button.js';
+import { fixture, waitForUpdate, getPart, requirePart } from '../../test-utils.js';
 
 // L'import enregistre le custom element dans la registry happy-dom
 import './button.js';
-
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
-// Alias pour éviter la répétition du cast updateComplete dans chaque test.
-// LitElement expose updateComplete en protected — on contourne via unknown.
-type LitEl = { updateComplete: Promise<boolean> };
-
-/**
- * Monte un composant dans le DOM de test et attend son premier rendu Lit.
- *
- * On passe par un <template> pour éviter que le parser HTML upgrade le custom
- * element avant qu'il soit inséré dans le document (comportement imprévisible).
- *
- * `updateComplete` est une Promise propre à LitElement : elle se résout après
- * que le cycle de rendu réactif en cours soit terminé. Sans ce await, le
- * shadowRoot existe mais son contenu peut ne pas encore être dans le DOM.
- */
-async function fixture(html: string): Promise<MrButton> {
-    const template = document.createElement('template');
-    template.innerHTML = html.trim();
-    const el = template.content.firstElementChild as MrButton;
-    document.body.appendChild(el);
-    await (el as unknown as LitEl).updateComplete;
-    return el;
-}
-
-/** Attend la fin du prochain cycle de rendu Lit sur un élément déjà monté. */
-async function waitForUpdate(el: MrButton): Promise<void> {
-    // Lit batchifie les mises à jour : le re-render (reflect:true, DOM shadow)
-    // est asynchrone. Sans ce await, les assertions liraient l'ancienne valeur.
-    await (el as unknown as LitEl).updateComplete;
-}
-
-/**
- * Retourne un élément du Shadow DOM ciblé par son attribut part="…".
- *
- * el.shadowRoot donne accès au Shadow DOM du composant. Les éléments rendus
- * par Lit (html`...`) y vivent — isolés du document principal et invisibles
- * à un querySelector lancé sur document.
- *
- * On cible par part="…" plutôt que par classe CSS ou tag : c'est l'API
- * publique stable du composant (contrat CSS parts).
- */
-function getPart(el: MrButton, part: string): Element {
-    const shadow = el.shadowRoot as ShadowRoot;
-    return shadow.querySelector(`[part="${part}"]`) as Element;
-}
 
 /** Retourne le <button> natif dans le Shadow DOM. */
 function getButton(el: MrButton): HTMLButtonElement {
@@ -76,7 +30,7 @@ describe('MrButton', () => {
 
         it('contient un élément <button> natif (part="base")', () => {
             expect(getPart(el, 'base')).not.toBeNull();
-            expect(getPart(el, 'base').tagName.toLowerCase()).toBe('button');
+            expect(requirePart(el, 'base').tagName.toLowerCase()).toBe('button');
         });
 
         it('contient un part="label"', () => {
