@@ -1,15 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import type { MrStepper } from './stepper.js';
+import { fixture } from '../../test-utils.js';
 import './stepper.js';
-
-async function fixture(html: string): Promise<MrStepper> {
-    const template = document.createElement('template');
-    template.innerHTML = html.trim();
-    const el = template.content.firstElementChild as MrStepper;
-    document.body.appendChild(el);
-    await (el as unknown as { updateComplete: Promise<boolean> }).updateComplete;
-    return el;
-}
 
 describe('MrStepper', () => {
     let el: MrStepper;
