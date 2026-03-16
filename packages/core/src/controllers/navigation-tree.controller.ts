@@ -46,7 +46,7 @@ export class NavigationTreeController implements ReactiveController {
 
         sorted.forEach((item) => {
             if (this.nodeMap.has(item.path)) {
-                console.warn(`[ft-stepper] duplicate path "${item.path}"`);
+                console.warn(`[mr-stepper] duplicate path "${item.path}"`);
             }
 
             const node: NavigationNode = {

@@ -5,7 +5,7 @@ export type NavigationMode = 'create' | 'edit';
 export interface NavigationNode {
     path: string;
     label: string;
-    href?: string;
+    href?: string | undefined;
 
     parent?: NavigationNode;
     children: NavigationNode[];

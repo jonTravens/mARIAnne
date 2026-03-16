@@ -5,7 +5,7 @@ export type ScrollTargetResolver = () => string[];
 export class ScrollFollowController implements ReactiveController {
     private host: ReactiveControllerHost & HTMLElement;
 
-    private observer?: IntersectionObserver;
+    private observer?: IntersectionObserver | undefined;
 
     private enabled = false;
 

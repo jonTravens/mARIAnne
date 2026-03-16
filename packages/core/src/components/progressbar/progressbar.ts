@@ -33,7 +33,7 @@ export class MrProgressbarConfig {
  */
 @customElement('mr-progressbar')
 export class MrProgressbar extends LitElement {
-    static override styles: CSSResultGroup | undefined = [utilitiesStyles, styles];
+    static override styles: CSSResultGroup = [utilitiesStyles, styles];
 
     /** Nom du composant affiché dans les logs */
     static readonly NAME = 'MrProgressbar';
