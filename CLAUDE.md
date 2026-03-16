@@ -195,6 +195,13 @@ variants:
 - **Prettier config**: 100 char width, 4 spaces, single quotes
 - **Node requirement**: >=20, npm >=10
 
+## Méthode de travail
+
+**Remettre en cause la demande après 3 essais infructueux**
+Si un correctif échoue 3 fois de suite, ne pas insister. S'arrêter et questionner la logique de la demande elle-même : est-ce rationnel ? Est-ce que ça va à l'encontre des conventions du domaine ? Est-ce que le problème vient du _quoi_ plutôt que du _comment_ ? Exposer le doute clairement à l'utilisateur et proposer une alternative avant de continuer. Exemple : tenter de simuler un layout mobile dans une preview desktop via CSS/JS alors que les DevTools sont l'outil fait pour ça.
+
+---
+
 ## Lessons — décisions techniques et erreurs à ne pas reproduire
 
 ### Docs site
@@ -239,3 +246,12 @@ happy-dom ne sérialise pas correctement les Text nodes dynamiques générés pa
 
 **Tests : helpers `fixture()`, `waitForUpdate()`, `getPart()` pour les composants Lit**
 Extraire ces trois helpers dans chaque fichier de test pour éviter les non-null assertions (`!`) bloquées par `lint-staged --max-warnings=0`. `getPart(el, 'name')` cible les éléments par `part="…"` — l'API publique stable du composant.
+
+**Tests : `.ariaCurrent` (et autres propriétés ARIA Lit) ne reflètent pas en attribut dans happy-dom**
+Quand Lit assigne une propriété ARIA via `.ariaCurrent`, `.ariaExpanded`, etc. (liaison de propriété DOM), `getAttribute('aria-current')` retourne `null` dans happy-dom. Tester la propriété JS directement : `(el as unknown as { ariaCurrent: string }).ariaCurrent`.
+
+**Tests : `MrBreadcrumb.mobileQuery` — mock minimal avec `addEventListener`/`removeEventListener`**
+Remplacer `MrBreadcrumb.mobileQuery` par `{ matches: true/false, addEventListener: vi.fn(), removeEventListener: vi.fn() } as unknown as MediaQueryList`. Un objet sans ces méthodes plante dans `connectedCallback`/`disconnectedCallback`. Créer un helper `mockMediaQuery(matches)` en tête de fichier.
+
+**Tests : composants avec `queueMicrotask` (ex: `_scheduleRebuild`) nécessitent deux `updateComplete`**
+Quand le rendu est déclenché depuis un `queueMicrotask` (pattern de debounce), `await updateComplete` une seule fois ne suffit pas. Dans `fixture()` et `waitForUpdate()`, `await updateComplete` deux fois de suite pour absorber le cycle initial + le cycle déclenché par le microtask.

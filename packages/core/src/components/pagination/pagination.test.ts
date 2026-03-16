@@ -1,51 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { MrPagination, type MrPaginationPageChangeDetail } from './pagination.js';
+import { fixture, waitForUpdate, getPart, requirePart } from '../../test-utils.js';
 import './pagination.js';
-
-// Alias pour éviter la répétition du cast updateComplete dans chaque test.
-// LitElement expose updateComplete en protected — on contourne via unknown.
-type LitEl = { updateComplete: Promise<boolean> };
-
-/**
- * Monte un composant dans le DOM de test et attend son premier rendu Lit.
- *
- * On passe par un <template> pour éviter que le parser HTML upgrade le custom
- * element avant qu'il soit inséré dans le document (comportement imprévisible).
- *
- * `updateComplete` est une Promise propre à LitElement : elle se résout après
- * que le cycle de rendu réactif en cours soit terminé. Sans ce await, le
- * shadowRoot existe mais son contenu peut ne pas encore être dans le DOM.
- */
-async function fixture(html: string): Promise<MrPagination> {
-    const template = document.createElement('template');
-    template.innerHTML = html.trim();
-    const el = template.content.firstElementChild as MrPagination;
-    document.body.appendChild(el);
-    await (el as unknown as LitEl).updateComplete;
-    return el;
-}
-
-/** Attend la fin du prochain cycle de rendu Lit sur un élément déjà monté. */
-async function waitForUpdate(el: MrPagination): Promise<void> {
-    // Lit batchifie les mises à jour : le re-render (reflect:true, DOM shadow)
-    // est asynchrone. Sans ce await, les assertions liraient l'ancienne valeur.
-    await (el as unknown as LitEl).updateComplete;
-}
-
-/**
- * Retourne un élément du Shadow DOM ciblé par son attribut part="…".
- *
- * el.shadowRoot donne accès au Shadow DOM du composant. Les éléments rendus
- * par Lit (html`...`) y vivent — isolés du document principal et invisibles
- * à un querySelector lancé sur document.
- *
- * On cible par part="…" plutôt que par classe CSS ou tag : c'est l'API
- * publique stable du composant (contrat CSS parts).
- */
-function getPart(el: MrPagination, part: string): Element {
-    const shadow = el.shadowRoot as ShadowRoot;
-    return shadow.querySelector(`[part="${part}"]`) as Element;
-}
 
 describe('MrPagination', () => {
     let el: MrPagination;
@@ -130,32 +86,32 @@ describe('MrPagination', () => {
     describe('accessibilité', () => {
         it('le nav a role="navigation"', async () => {
             el = await fixture('<mr-pagination></mr-pagination>');
-            expect(getPart(el, 'nav').getAttribute('role')).toBe('navigation');
+            expect(requirePart(el, 'nav').getAttribute('role')).toBe('navigation');
         });
 
         it('prev est aria-disabled="true" en page 1', async () => {
             el = await fixture('<mr-pagination current="1" total="5"></mr-pagination>');
-            expect(getPart(el, 'prev').getAttribute('aria-disabled')).toBe('true');
+            expect(requirePart(el, 'prev').getAttribute('aria-disabled')).toBe('true');
         });
 
         it("prev n'est pas aria-disabled en page > 1", async () => {
             el = await fixture('<mr-pagination current="2" total="5"></mr-pagination>');
-            expect(getPart(el, 'prev').getAttribute('aria-disabled')).toBe('false');
+            expect(requirePart(el, 'prev').getAttribute('aria-disabled')).toBe('false');
         });
 
         it('next est aria-disabled="true" en dernière page', async () => {
             el = await fixture('<mr-pagination current="5" total="5"></mr-pagination>');
-            expect(getPart(el, 'next').getAttribute('aria-disabled')).toBe('true');
+            expect(requirePart(el, 'next').getAttribute('aria-disabled')).toBe('true');
         });
 
         it("next n'est pas aria-disabled avant la dernière page", async () => {
             el = await fixture('<mr-pagination current="3" total="5"></mr-pagination>');
-            expect(getPart(el, 'next').getAttribute('aria-disabled')).toBe('false');
+            expect(requirePart(el, 'next').getAttribute('aria-disabled')).toBe('false');
         });
 
         it('la page active a aria-current="true"', async () => {
             el = await fixture('<mr-pagination current="3" total="5"></mr-pagination>');
-            expect(getPart(el, 'current').getAttribute('aria-current')).toBe('true');
+            expect(requirePart(el, 'current').getAttribute('aria-current')).toBe('true');
         });
     });
 
@@ -198,28 +154,28 @@ describe('MrPagination', () => {
     describe('navigation', () => {
         it('un clic sur prev décrémente current', async () => {
             el = await fixture('<mr-pagination current="3" total="5"></mr-pagination>');
-            (getPart(el, 'prev') as HTMLElement).click();
+            (requirePart(el, 'prev') as HTMLElement).click();
             await waitForUpdate(el);
             expect(el.current).toBe(2);
         });
 
         it('un clic sur next incrémente current', async () => {
             el = await fixture('<mr-pagination current="3" total="5"></mr-pagination>');
-            (getPart(el, 'next') as HTMLElement).click();
+            (requirePart(el, 'next') as HTMLElement).click();
             await waitForUpdate(el);
             expect(el.current).toBe(4);
         });
 
         it('prev ne décrémente pas en dessous de 1', async () => {
             el = await fixture('<mr-pagination current="1" total="5"></mr-pagination>');
-            (getPart(el, 'prev') as HTMLElement).click();
+            (requirePart(el, 'prev') as HTMLElement).click();
             await waitForUpdate(el);
             expect(el.current).toBe(1);
         });
 
         it('next ne dépasse pas total', async () => {
             el = await fixture('<mr-pagination current="5" total="5"></mr-pagination>');
-            (getPart(el, 'next') as HTMLElement).click();
+            (requirePart(el, 'next') as HTMLElement).click();
             await waitForUpdate(el);
             expect(el.current).toBe(5);
         });
@@ -242,7 +198,7 @@ describe('MrPagination', () => {
             const handler = vi.fn();
             el.addEventListener('mr-pagination-page-change', handler);
 
-            (getPart(el, 'next') as HTMLElement).click();
+            (requirePart(el, 'next') as HTMLElement).click();
             await waitForUpdate(el);
 
             expect(handler).toHaveBeenCalledOnce();
@@ -257,7 +213,7 @@ describe('MrPagination', () => {
             const handler = vi.fn();
             el.addEventListener('mr-pagination-page-change', handler);
 
-            (getPart(el, 'prev') as HTMLElement).click();
+            (requirePart(el, 'prev') as HTMLElement).click();
             await waitForUpdate(el);
 
             expect(handler).toHaveBeenCalledOnce();
@@ -289,7 +245,7 @@ describe('MrPagination', () => {
             const handler = vi.fn();
             el.addEventListener('mr-pagination-page-change', handler);
 
-            (getPart(el, 'prev') as HTMLElement).click();
+            (requirePart(el, 'prev') as HTMLElement).click();
             await waitForUpdate(el);
 
             expect(handler).not.toHaveBeenCalled();
@@ -300,7 +256,7 @@ describe('MrPagination', () => {
             const handler = vi.fn();
             el.addEventListener('mr-pagination-page-change', handler);
 
-            (getPart(el, 'next') as HTMLElement).click();
+            (requirePart(el, 'next') as HTMLElement).click();
             await waitForUpdate(el);
 
             expect(handler).not.toHaveBeenCalled();
@@ -317,7 +273,7 @@ describe('MrPagination', () => {
                 { once: true },
             );
 
-            (getPart(el, 'next') as HTMLElement).click();
+            (requirePart(el, 'next') as HTMLElement).click();
             await waitForUpdate(el);
 
             expect(captured).not.toBeNull();

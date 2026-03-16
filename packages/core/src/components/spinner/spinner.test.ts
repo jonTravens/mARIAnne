@@ -1,26 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { MrSpinner } from './spinner.js';
+import { fixture, waitForUpdate, getPart, requirePart } from '../../test-utils.js';
 import './spinner.js';
-
-type LitEl = { updateComplete: Promise<boolean> };
-
-async function fixture(html: string): Promise<MrSpinner> {
-    const template = document.createElement('template');
-    template.innerHTML = html.trim();
-    const el = template.content.firstElementChild as MrSpinner;
-    document.body.appendChild(el);
-    await (el as unknown as LitEl).updateComplete;
-    return el;
-}
-
-async function waitForUpdate(el: MrSpinner): Promise<void> {
-    await (el as unknown as LitEl).updateComplete;
-}
-
-function getPart(el: MrSpinner, part: string): Element {
-    const shadow = el.shadowRoot as ShadowRoot;
-    return shadow.querySelector(`[part="${part}"]`) as Element;
-}
 
 describe('MrSpinner', () => {
     let el: MrSpinner;
@@ -79,11 +60,11 @@ describe('MrSpinner', () => {
         });
 
         it("le SVG spinner est visible (pas d'attribut hidden)", () => {
-            expect(getPart(el, 'spinner').hasAttribute('hidden')).toBe(false);
+            expect(requirePart(el, 'spinner').hasAttribute('hidden')).toBe(false);
         });
 
         it('le div status a role="alert"', () => {
-            expect(getPart(el, 'status').getAttribute('role')).toBe('alert');
+            expect(requirePart(el, 'status').getAttribute('role')).toBe('alert');
         });
 
         // happy-dom ne sérialise pas les Text nodes dynamiques de Lit en textContent.
@@ -101,7 +82,7 @@ describe('MrSpinner', () => {
         });
 
         it('le SVG spinner est masqué (attribut hidden présent)', () => {
-            expect(getPart(el, 'spinner').hasAttribute('hidden')).toBe(true);
+            expect(requirePart(el, 'spinner').hasAttribute('hidden')).toBe(true);
         });
 
         it('la propriété doneLabel contient le texte annoncé à la fin', () => {
@@ -128,18 +109,18 @@ describe('MrSpinner', () => {
 
         it('masque le SVG après passage à done=true', async () => {
             el = await fixture('<mr-spinner></mr-spinner>');
-            expect(getPart(el, 'spinner').hasAttribute('hidden')).toBe(false);
+            expect(requirePart(el, 'spinner').hasAttribute('hidden')).toBe(false);
             el.done = true;
             await waitForUpdate(el);
-            expect(getPart(el, 'spinner').hasAttribute('hidden')).toBe(true);
+            expect(requirePart(el, 'spinner').hasAttribute('hidden')).toBe(true);
         });
 
         it('affiche le SVG après retour à done=false', async () => {
             el = await fixture('<mr-spinner done></mr-spinner>');
-            expect(getPart(el, 'spinner').hasAttribute('hidden')).toBe(true);
+            expect(requirePart(el, 'spinner').hasAttribute('hidden')).toBe(true);
             el.done = false;
             await waitForUpdate(el);
-            expect(getPart(el, 'spinner').hasAttribute('hidden')).toBe(false);
+            expect(requirePart(el, 'spinner').hasAttribute('hidden')).toBe(false);
         });
     });
 
@@ -176,12 +157,12 @@ describe('MrSpinner', () => {
     describe('accessibilité', () => {
         it('le SVG a aria-hidden="true"', async () => {
             el = await fixture('<mr-spinner></mr-spinner>');
-            expect(getPart(el, 'spinner').getAttribute('aria-hidden')).toBe('true');
+            expect(requirePart(el, 'spinner').getAttribute('aria-hidden')).toBe('true');
         });
 
         it('le SVG a focusable="false"', async () => {
             el = await fixture('<mr-spinner></mr-spinner>');
-            expect(getPart(el, 'spinner').getAttribute('focusable')).toBe('false');
+            expect(requirePart(el, 'spinner').getAttribute('focusable')).toBe('false');
         });
     });
 });
