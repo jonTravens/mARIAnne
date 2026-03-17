@@ -48,7 +48,8 @@ const codeTokens = `:root {
 >
     <h2>Utilisation</h2>
 
-    <section class="gs-section" id="import">
+    <div class="page-content">
+    <section id="import">
         <h3>Import des composants</h3>
         <p>
             Une fois <a href="/getting-started/installation">installée</a>, la bibliothèque s'utilise
@@ -66,7 +67,7 @@ const codeTokens = `:root {
         <pre><code class="language-html" set:text={codeHtml} /></pre>
     </section>
 
-    <section class="gs-section" id="personnalisation">
+    <section id="personnalisation">
         <h3>Personnalisation CSS</h3>
         <p>
             Chaque composant expose des <strong>CSS Custom Properties</strong> pour adapter
@@ -79,7 +80,7 @@ const codeTokens = `:root {
         </p>
     </section>
 
-    <section class="gs-section" id="tokens">
+    <section id="tokens">
         <h3>Design Tokens</h3>
         <p>
             Les valeurs par défaut (couleurs, espacements, typographie…) viennent du fichier de thème
@@ -91,6 +92,7 @@ const codeTokens = `:root {
             des variables disponibles.
         </p>
     </section>
+    </div>
 
     <TableOfContents entries={tocEntries} slot="toc" />
 </Layout>

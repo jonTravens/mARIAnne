@@ -36,7 +36,8 @@ const codeAutoloader = `<script type="module" src="https://unpkg.com/@marianne/c
 >
     <h2>Installation</h2>
 
-    <section class="gs-section" id="cdn">
+    <div class="page-content">
+    <section id="cdn">
         <h3>Via CDN <span class="badge">Sans bundler</span></h3>
         <p>
             La méthode la plus rapide. Ajoutez les deux balises dans votre <code>&lt;head&gt;</code> —
@@ -47,7 +48,7 @@ const codeAutoloader = `<script type="module" src="https://unpkg.com/@marianne/c
         <pre><code class="language-html" set:text={codeCdnUsage} /></pre>
     </section>
 
-    <section class="gs-section" id="npm">
+    <section id="npm">
         <h3>Via npm <span class="badge">Avec bundler</span></h3>
         <p>Pour une intégration dans un projet avec bundler (Vite, Webpack, Rollup…).</p>
         <pre><code class="language-bash" set:text={codeNpmInstall} /></pre>
@@ -68,7 +69,7 @@ const codeAutoloader = `<script type="module" src="https://unpkg.com/@marianne/c
         <pre><code class="language-html" set:text={codeAutoloader} /></pre>
     </section>
 
-    <section class="gs-section" id="prerequis">
+    <section id="prerequis">
         <h3>Prérequis</h3>
         <ul>
             <li>Node ≥ 20</li>
@@ -82,6 +83,7 @@ const codeAutoloader = `<script type="module" src="https://unpkg.com/@marianne/c
             </li>
         </ul>
     </section>
+    </div>
 
     <TableOfContents entries={tocEntries} slot="toc" />
 </Layout>

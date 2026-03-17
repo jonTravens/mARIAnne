@@ -25,6 +25,7 @@ const categories = parseTokens(css);
         Modifiez le fichier de thème, ces valeurs se mettent à jour à la compilation.
     </p>
 
+    <div class="categories">
     {categories.map((category) => (
         <section>
             <h3 class="doc-section-title">{category.label}</h3>
@@ -57,6 +58,7 @@ const categories = parseTokens(css);
             </div>
         </section>
     ))}
+    </div>
 
 </Layout>
 
@@ -64,23 +66,21 @@ const categories = parseTokens(css);
     @import '../../styles/doc-table.css';
 
     .intro {
-        font-size:     0.95rem;
-        color:         var(--doc-text-muted, #4b5563);
-        margin-bottom: 2rem;
-    }
-
-    section {
-        margin-bottom: 2.5rem;
+        font-size: 0.95rem;
+        color:     var(--doc-text-muted, #4b5563);
     }
 
     .page-title {
-        color:       var(--doc-text, #111827);
+        color:     var(--doc-text, #111827);
         font-size: 2em;
-        margin-bottom: 0;
+        margin:    0;
+    }
 
-        + p, + section {
-            margin-top: 1.5rem;
-        }
+    .categories {
+        display:        flex;
+        flex-direction: column;
+        gap:            2.5rem;
+        margin-top:     1.5rem;
     }
 
     /* Tokens page : swatch un peu plus grande que dans ComponentApi */

@@ -11,9 +11,14 @@ h2 {
     margin: 0;
 }
 
-h2 + p,
-h2 + section {
+h2 + .page-content {
     margin-top: 1.5rem;
+}
+
+.page-content {
+    display: flex;
+    flex-direction: column;
+    gap: 2.5rem;
 }
 
 h3 {
@@ -76,10 +81,6 @@ pre code {
     color: #e6edf3;
     background: transparent;
     padding: 0;
-}
-
-.gs-section {
-    margin: 2.5rem 0;
 }
 
 .badge {
