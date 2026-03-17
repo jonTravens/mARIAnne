@@ -47,6 +47,23 @@ const {
         <style>
             *, *::before, *::after { box-sizing: border-box; }
 
+            .alpha-banner {
+                position:        relative;
+                z-index:         200;
+                background:      #92400e;
+                color:           #fef3c7;
+                text-align:      center;
+                font-size:       0.8rem;
+                padding:         0.4rem 1rem;
+                letter-spacing:  0.01em;
+            }
+
+            .alpha-banner a {
+                color:           inherit;
+                font-weight:     600;
+                text-underline-offset: 2px;
+            }
+
             :root {
                 --doc-bg:         #ffffff;
                 --doc-text:       #111827;
@@ -313,6 +330,11 @@ const {
         </style>
     </head>
     <body>
+        <div class="alpha-banner" role="banner">
+            Librairie en cours de développement — API instable, ne pas utiliser en production.
+            <a href="https://github.com/jonTravens/mARIAnne/issues" target="_blank" rel="noopener noreferrer">Signaler un problème</a>
+        </div>
+
         <!-- Header permanent (desktop + mobile) -->
         <header class="site-header">
             <div class="header-left">
