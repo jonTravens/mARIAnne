@@ -167,13 +167,15 @@ apps/docs/
 │   │   ├── config.ts               ← Schéma Zod du frontmatter MDX
 │   │   └── components/             ← Un fichier MDX par composant
 │   ├── layouts/
-│   │   └── Layout.astro            ← Layout 3 colonnes (nav | contenu | TOC)
+│   │   └── Layout.astro            ← Layout principal + variables CSS --doc-*
 │   ├── pages/
 │   │   ├── index.astro             ← Page d'accueil (liste des composants)
 │   │   ├── components/[slug].astro ← Route dynamique — une page par composant
+│   │   ├── getting-started/        ← Pages Installation et Utilisation
 │   │   └── foundations/tokens.astro ← Page Design Tokens (auto-extraite du CSS)
 │   ├── styles/
-│   │   └── doc-table.css           ← Styles partagés pour les tableaux
+│   │   ├── doc-prose.css           ← Typographie partagée (h2→h4, p, pre, badge…)
+│   │   └── doc-table.css           ← Tableaux + .doc-section-title
 │   └── utils/
 │       ├── cem-types.ts            ← Types TypeScript + helpers CEM partagés
 │       ├── tag-name.ts             ← getSlug(), getPrefix(), groupByPrefix()
@@ -243,6 +245,58 @@ Le playground re-colore le bloc code après chaque changement de contrôle via
 
 ---
 
+## Convention CSS
+
+### Fichiers partagés
+
+Ne jamais dupliquer du CSS entre fichiers `.astro`. Avant d'écrire une règle, vérifier si elle existe déjà dans un fichier partagé.
+
+| Fichier                    | Contenu                                                                         | Utilisé par                                           |
+| -------------------------- | ------------------------------------------------------------------------------- | ----------------------------------------------------- |
+| `src/styles/doc-prose.css` | Typographie de contenu : titres, paragraphes, listes, liens, blocs code, badges | Pages getting-started et toute future page de contenu |
+| `src/styles/doc-table.css` | Tableaux + `.doc-section-title`                                                 | `ComponentApi.astro`, `tokens.astro`                  |
+
+Usage dans un `<style>` Astro :
+
+```css
+<style>
+    @import '../styles/doc-prose.css';
+
+    /* Styles spécifiques à cette page uniquement */
+    .ma-classe { … }
+</style>
+```
+
+### Variables CSS `--doc-*`
+
+**Jamais de couleurs hexadécimales** dans les fichiers de la doc. Utiliser exclusivement les variables `--doc-*` définies dans `Layout.astro` (voir section "Thème de la documentation").
+
+### Espacement entre sections
+
+Utiliser `display: flex; flex-direction: column; gap: Xrem` sur le conteneur parent plutôt que des `margin-bottom` sur chaque enfant. La classe `.page-content` (dans `doc-prose.css`) applique ce pattern pour les pages de contenu.
+
+### Nouvelle page de contenu
+
+1. Utiliser `Layout.astro` avec `showNav={true}`
+2. Ajouter `@import '../styles/doc-prose.css';` dans le `<style>`
+3. Envelopper les sections dans `<div class="page-content">`
+4. Ajouter la page dans `SiteNav.astro`
+
+---
+
+## Règle de mise à jour de la documentation
+
+**Toute évolution de l'architecture du site doit être reflétée dans ce fichier.**
+
+Lors d'une PR qui modifie l'un des éléments ci-dessous, mettre à jour la section correspondante de ce `CONTRIBUTING.md` :
+
+- Ajout ou suppression d'un fichier CSS partagé → mettre à jour le tableau "Fichiers partagés"
+- Ajout d'une nouvelle page ou section → mettre à jour l'arborescence "Architecture des fichiers"
+- Changement dans le flux de données CEM → mettre à jour le schéma "Flux de données par page composant"
+- Nouvelle convention ou pattern CSS → documenter dans "Convention CSS"
+
+---
+
 ## Checklist pour ajouter un composant
 
 - [ ] Créer `packages/core/src/components/<nom>/<nom>.ts` avec les annotations JSDoc
@@ -250,3 +304,10 @@ Le playground re-colore le bloc code après chaque changement de contrôle via
 - [ ] Créer `apps/docs/src/content/components/mr-<nom>.mdx` avec au moins une variante
 - [ ] Lancer `npm run dev` et vérifier la page `/components/<nom>`
 - [ ] Si sous-composant : ajouter uniquement `@parent mr-<parent>` dans la JSDoc (aucun champ MDX supplémentaire)
+
+## Checklist pour modifier l'architecture du site
+
+- [ ] La modification est-elle testée visuellement en light **et** dark mode ?
+- [ ] Les couleurs utilisées sont-elles des variables `--doc-*` (pas de hex hardcodé) ?
+- [ ] Le CSS ajouté existe-t-il déjà dans `doc-prose.css` ou `doc-table.css` ?
+- [ ] Ce `CONTRIBUTING.md` est-il à jour avec les changements apportés ?

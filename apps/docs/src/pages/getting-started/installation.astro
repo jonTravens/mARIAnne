@@ -36,7 +36,8 @@ const codeAutoloader = `<script type="module" src="https://unpkg.com/@marianne/c
 >
     <h2>Installation</h2>
 
-    <section class="gs-section" id="cdn">
+    <div class="page-content">
+    <section id="cdn">
         <h3>Via CDN <span class="badge">Sans bundler</span></h3>
         <p>
             La méthode la plus rapide. Ajoutez les deux balises dans votre <code>&lt;head&gt;</code> —
@@ -47,7 +48,7 @@ const codeAutoloader = `<script type="module" src="https://unpkg.com/@marianne/c
         <pre><code class="language-html" set:text={codeCdnUsage} /></pre>
     </section>
 
-    <section class="gs-section" id="npm">
+    <section id="npm">
         <h3>Via npm <span class="badge">Avec bundler</span></h3>
         <p>Pour une intégration dans un projet avec bundler (Vite, Webpack, Rollup…).</p>
         <pre><code class="language-bash" set:text={codeNpmInstall} /></pre>
@@ -68,7 +69,7 @@ const codeAutoloader = `<script type="module" src="https://unpkg.com/@marianne/c
         <pre><code class="language-html" set:text={codeAutoloader} /></pre>
     </section>
 
-    <section class="gs-section" id="prerequis">
+    <section id="prerequis">
         <h3>Prérequis</h3>
         <ul>
             <li>Node ≥ 20</li>
@@ -82,108 +83,11 @@ const codeAutoloader = `<script type="module" src="https://unpkg.com/@marianne/c
             </li>
         </ul>
     </section>
+    </div>
 
     <TableOfContents entries={tocEntries} slot="toc" />
 </Layout>
 
 <style>
-    h2 {
-        color:       var(--doc-text, #111827);
-        font-size: 2em;
-        margin: 0;
-
-        + p, + section {
-            margin-top: 1.5rem;
-        }
-    }
-
-    .page-title {
-    }
-
-    .gs-section {
-        margin: 2.5rem 0;
-    }
-
-    h3 {
-        font-size:      1.1rem;
-        font-weight:    700;
-        border-bottom:  2px solid var(--doc-border, #e5e7eb);
-        padding-bottom: 0.5rem;
-        margin-bottom:  1rem;
-        color:          var(--doc-text, #111827);
-        display:        flex;
-        align-items:    center;
-        gap:            0.5rem;
-    }
-
-    h4 {
-        font-size:   0.95rem;
-        font-weight: 600;
-        color:       var(--doc-text, #111827);
-        margin:      1.25rem 0 0.4rem;
-        display:     flex;
-        align-items: center;
-        gap:         0.5rem;
-    }
-
-    p {
-        font-size:     0.95rem;
-        color:         var(--doc-text, #374151);
-        margin-bottom: 0.75rem;
-        line-height:   1.65;
-    }
-
-    ul {
-        font-size:    0.95rem;
-        color:        var(--doc-text, #374151);
-        padding-left: 1.25rem;
-        line-height:  1.8;
-    }
-
-    a {
-        color:           var(--mr-color-primary-500, #2563eb);
-        text-decoration: none;
-    }
-
-    a:hover { text-decoration: underline; }
-
-    pre {
-        background:    #0d1117;
-        border-radius: 0.5rem;
-        padding:       1rem 1.25rem;
-        overflow-x:    auto;
-        margin:        0.5rem 0 1rem;
-    }
-
-    pre code {
-        font-family: 'Fira Code', 'Cascadia Code', monospace;
-        font-size:   0.82rem;
-        line-height: 1.6;
-        color:       #e6edf3;
-        background:  transparent;
-        padding:     0;
-    }
-
-    :global(p code) {
-        font-size:     0.85em;
-        background:    var(--doc-nav-bg, #f3f4f6);
-        color:         var(--doc-text, #111827);
-        padding:       0.1em 0.35em;
-        border-radius: 0.25em;
-    }
-
-    .badge {
-        font-size:      0.7rem;
-        font-weight:    600;
-        padding:        0.15em 0.5em;
-        border-radius:  0.25rem;
-        background:     color-mix(in srgb, var(--mr-color-primary-500, #2563eb) 12%, transparent);
-        color:          var(--mr-color-primary-500, #2563eb);
-        letter-spacing: 0.02em;
-    }
-
-    .badge-subtle {
-        background: color-mix(in srgb, var(--doc-border, #e5e7eb) 80%, transparent);
-        color:      var(--doc-text-muted, #6b7280);
-    }
+    @import '../../styles/doc-prose.css';
 </style>
