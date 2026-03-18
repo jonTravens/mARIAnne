@@ -169,10 +169,13 @@ const showPlayground = displayMode === 'demo';
 <style>
     /* ── Sections communes ─────────────────────────────── */
 
+    /* Le wrapper Playground est rendu dans .main-inner — pas de flex ici.
+       Les sections s'espacent via margin-top pour ne pas interférer avec
+       le border-radius preview+code qui nécessite border-top:none adjacent. */
     .examples-section,
     .playground-section,
     #reference-api {
-        margin: 2.5rem 0;
+        margin-top: 2.5rem;
     }
 
     h4 {
@@ -186,22 +189,35 @@ const showPlayground = displayMode === 'demo';
 
     /* ── Variantes ─────────────────────────────────────── */
 
+    .examples-section {
+        display:        flex;
+        flex-direction: column;
+        gap:            2.5rem;
+    }
+
+    /* h4 "Exemples" sort du flux flex via margin-bottom négatif compense le gap */
+    .examples-section > h4 {
+        margin-bottom: -1rem;
+    }
+
     .variant {
-        margin-bottom: 2.5rem;
+        display:        flex;
+        flex-direction: column;
+        gap:            0.5rem;
     }
 
     h5 {
-        font-size:     1rem;
-        font-weight:   600;
-        color:         var(--doc-text, #374151);
-        margin-bottom: 0.5rem;
+        font-size:   1rem;
+        font-weight: 600;
+        color:       var(--doc-text, #374151);
+        margin:      0;
     }
 
     .variant-description {
-        font-size:     0.875rem;
-        color:         var(--doc-text-muted, #6b7280);
-        font-style:    italic;
-        margin-bottom: 0.75rem;
+        font-size:  0.875rem;
+        color:      var(--doc-text-muted, #6b7280);
+        font-style: italic;
+        margin:     0;
     }
 
     /* ── Preview ─────────────────────────────────────── */
@@ -220,17 +236,17 @@ const showPlayground = displayMode === 'demo';
         justify-content: center;
         width:           1.75rem;
         height:          1.75rem;
-        background:      rgba(255, 255, 255, 0.75);
+        background:      color-mix(in srgb, var(--doc-bg, #ffffff) 75%, transparent);
         backdrop-filter: blur(4px);
-        border:          1px solid rgba(0, 0, 0, 0.12);
+        border:          1px solid var(--doc-border, #e5e7eb);
         border-radius:   0.375rem;
         cursor:          pointer;
-        color:           #374151;
+        color:           var(--doc-text-muted, #6b7280);
         transition:      background 0.15s;
     }
 
     .preview-theme-toggle:hover {
-        background: rgba(255, 255, 255, 0.95);
+        background: var(--doc-bg, #ffffff);
     }
 
     .preview {
@@ -285,8 +301,8 @@ const showPlayground = displayMode === 'demo';
         top:           0.5rem;
         right:         0.5rem;
         padding:       0.25rem 0.6rem;
-        background:    rgba(55, 65, 81, 0.85);
-        color:         #d1d5db;
+        background:    color-mix(in srgb, var(--doc-nav-bg, #1f2937) 85%, transparent);
+        color:         var(--doc-text-muted, #d1d5db);
         border:        none;
         border-radius: 0.25rem;
         font-size:     0.75rem;
@@ -295,7 +311,7 @@ const showPlayground = displayMode === 'demo';
         z-index:       1;
     }
 
-    .copy-btn:hover  { background: rgba(75, 85, 99, 0.95); }
+    .copy-btn:hover  { background: var(--doc-nav-bg, #374151); }
     .copy-btn.copied { background: #059669; color: #fff; }
 
     /* highlight.js gère le background via son thème CSS — on aligne juste la typo */
